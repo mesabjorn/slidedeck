@@ -6,8 +6,9 @@ type Token =
   | { type: 'italic'; text: string }
   | { type: 'code'; text: string }
   | { type: 'link'; text: string; href: string }
+  | { type: 'image'; alt: string; src: string }
 
-const TOKEN_RE = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|\*[^*]+\*)/g
+const TOKEN_RE = /(\*\*[^*]+\*\*|`[^`]+`|!\[[^\]]*\]\([^)\s]+\)|\[[^\]]+\]\([^)]+\)|\*[^*]+\*)/g
 
 function tokenize(text: string): Token[] {
   return text
@@ -19,6 +20,10 @@ function tokenize(text: string): Token[] {
       }
       if (part.startsWith('`') && part.endsWith('`')) {
         return { type: 'code', text: part.slice(1, -1) }
+      }
+      const image = part.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/)
+      if (image) {
+        return { type: 'image', alt: image[1], src: image[2] }
       }
       const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
       if (link) {
@@ -68,6 +73,17 @@ export function InlineText({ text }: { text: string }) {
               >
                 {token.text}
               </a>
+            )
+          case 'image':
+            return (
+              <img
+                key={i}
+                src={token.src}
+                alt={token.alt}
+                className="inline-block align-[-0.2em]"
+                style={{ height: '1.2em', width: 'auto' }}
+                loading="lazy"
+              />
             )
           default:
             return <Fragment key={i}>{token.text}</Fragment>

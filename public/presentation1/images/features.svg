@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="Illustration of the SlideDeck workflow">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#312e81"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#a5b4fc"/>
+      <stop offset="1" stop-color="#e0e7ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="960" height="540" fill="url(#bg)"/>
+
+  <g fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2">
+    <line x1="120" y1="330" x2="840" y2="330" stroke-dasharray="6 6"/>
+    <line x1="120" y1="280" x2="840" y2="280" stroke-dasharray="6 6"/>
+    <line x1="120" y1="230" x2="840" y2="230" stroke-dasharray="6 6"/>
+    <line x1="120" y1="180" x2="840" y2="180" stroke-dasharray="6 6"/>
+  </g>
+
+  <g>
+    <rect x="160" y="230" width="62" height="100" rx="6" fill="url(#bar)"/>
+    <rect x="268" y="200" width="62" height="130" rx="6" fill="url(#bar)"/>
+    <rect x="376" y="160" width="62" height="170" rx="6" fill="url(#bar)"/>
+    <rect x="484" y="250" width="62" height="80" rx="6" fill="url(#bar)"/>
+    <rect x="592" y="190" width="62" height="140" rx="6" fill="url(#bar)"/>
+    <rect x="700" y="120" width="62" height="210" rx="6" fill="url(#bar)"/>
+  </g>
+
+  <circle cx="484" cy="330" r="7" fill="#e0e7ff" opacity="0.9"/>
+  <line x1="700" y1="120" x2="730" y2="80" stroke="#c4b5fd" stroke-width="4" stroke-linecap="round"/>
+
+  <circle cx="760" cy="200" r="58" fill="rgba(255,255,255,0.16)"/>
+  <text x="760" y="214" text-anchor="middle" font-family="system-ui, sans-serif" font-size="56" font-weight="600" fill="#fff">Md</text>
+
+  <text x="480" y="456" text-anchor="middle" font-family="system-ui, sans-serif" font-size="44" font-weight="700" letter-spacing="2" fill="#fff">markdown → slides</text>
+</svg>

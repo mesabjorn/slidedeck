@@ -6,6 +6,7 @@ import {
   Expand,
   HelpCircle,
   LayoutGrid,
+  Presentation,
   Shrink,
   X,
 } from 'lucide-react'
@@ -15,6 +16,8 @@ import { SlideView } from './SlideView'
 
 interface SlideDeckProps {
   slides: Slide[]
+  presentationTitle?: string
+  onExit?: () => void
 }
 
 const SHORTCUTS = [
@@ -36,7 +39,7 @@ function Kbd({ children }: { children: ReactNode }) {
   )
 }
 
-export function SlideDeck({ slides }: SlideDeckProps) {
+export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps) {
   const total = slides.length
   const [index, setIndex] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -155,14 +158,26 @@ export function SlideDeck({ slides }: SlideDeckProps) {
       </div>
 
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-5 py-4">
-        <button
-          type="button"
-          onClick={() => setShowHelp(true)}
-          title="Help (H)"
-          className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
-        >
-          <HelpCircle className="h-5 w-5" />
-        </button>
+        <div className="flex gap-2">
+          {onExit && (
+            <button
+              type="button"
+              onClick={onExit}
+              title="All presentations"
+              className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
+            >
+              <Presentation className="h-5 w-5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            title="Help (H)"
+            className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </button>
+        </div>
 
         <span className="rounded-full bg-white/10 px-3 py-1 font-mono text-sm text-slate-300">
           {index + 1} / {total}
@@ -227,7 +242,14 @@ export function SlideDeck({ slides }: SlideDeckProps) {
 
       {showOverview && (
         <div className="absolute inset-0 z-20 overflow-y-auto bg-black/90 p-8 backdrop-blur-sm">
-          <div className="mx-auto grid w-full max-w-6xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mx-auto w-full max-w-6xl">
+            <div className="mb-6 flex items-end justify-between">
+              <h2 className="text-xl font-semibold text-white">
+                {presentationTitle ?? 'Overview'}
+              </h2>
+              <span className="text-sm text-slate-500">{total} slides</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {slides.map((slide, i) => (
               <button
                 type="button"
@@ -255,6 +277,7 @@ export function SlideDeck({ slides }: SlideDeckProps) {
                 )}
               </button>
             ))}
+            </div>
           </div>
         </div>
       )}

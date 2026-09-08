@@ -14,6 +14,15 @@ export function SlideView({ slide }: { slide: Slide }) {
         <InlineText text={slide.title} />
       </h1>
 
+      {slide.image && (
+        <img
+          src={slide.image.src}
+          alt={slide.image.alt}
+          loading="lazy"
+          className="mx-auto mt-10 max-h-[36vh] max-w-full rounded-2xl border border-white/10 object-contain shadow-2xl"
+        />
+      )}
+
       {slide.items.length > 0 && (
         <ul className="mx-auto mt-12 max-w-3xl space-y-5 text-left">
           {slide.items.map((item, i) => (

@@ -1,10 +1,26 @@
-import type { Slide } from './types'
+import type { Slide, SlideImage } from './types'
 
 const SLIDE_SEPARATOR_RE = /^---\s*$/m
 const H1_RE = /^#\s+(.*)$/
 const H2_RE = /^##\s+(.*)$/
+const IMAGE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/
 const BULLET_RE = /^[-*+]\s+(.*)$/
 const NUMBERED_RE = /^\d+[.)]\s+(.*)$/
+const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g
+
+export function resolveMediaPath(src: string, presentationId: string): string {
+  if (/^(https?:)?\/\//.test(src) || src.startsWith('/') || src.startsWith('data:')) {
+    return src
+  }
+  if (src.startsWith(`${presentationId}/`)) {
+    return src
+  }
+  return `${presentationId}/${src.replace(/^\.\//, '')}`
+}
+
+export function resolveMediaInText(text: string, resolve: (src: string) => string): string {
+  return text.replace(INLINE_IMAGE_RE, (_match, alt, src) => `![${alt}](${resolve(src)})`)
+}
 
 export function parseSlides(source: string, sourceFile: string): Slide[] {
   const blocks = source
@@ -21,6 +37,7 @@ function parseSlide(block: string, sourceFile: string, index: number): Slide | n
   let title = ''
   const subtitleLines: string[] = []
   const items: string[] = []
+  let image: SlideImage | undefined
 
   for (const rawLine of block.split('\n')) {
     const line = rawLine.trim()
@@ -38,6 +55,12 @@ function parseSlide(block: string, sourceFile: string, index: number): Slide | n
       continue
     }
 
+    const img = IMAGE_RE.exec(line)
+    if (img) {
+      if (!image) image = { src: img[2], alt: img[1] }
+      continue
+    }
+
     const bullet = BULLET_RE.exec(line) ?? NUMBERED_RE.exec(line)
     if (bullet) {
       items.push(bullet[1])
@@ -49,7 +72,8 @@ function parseSlide(block: string, sourceFile: string, index: number): Slide | n
     }
   }
 
-  if (!title && items.length === 0 && subtitleLines.length === 0) {
+  const hasContent = items.length > 0 || subtitleLines.length > 0 || image !== undefined
+  if (!title && !hasContent) {
     return null
   }
 
@@ -58,5 +82,6 @@ function parseSlide(block: string, sourceFile: string, index: number): Slide | n
     title: title || sourceFile.replace(/\.md$/i, ''),
     subtitle: subtitleLines.length > 0 ? subtitleLines.join(' ') : undefined,
     items,
+    image,
   }
 }
