@@ -43,7 +43,7 @@ export function InlineText({ text }: { text: string }) {
         switch (token.type) {
           case 'bold':
             return (
-              <strong key={i} className="font-semibold text-white">
+              <strong key={i} className="font-semibold text-heading">
                 {token.text}
               </strong>
             )
@@ -57,7 +57,7 @@ export function InlineText({ text }: { text: string }) {
             return (
               <code
                 key={i}
-                className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[0.85em] text-indigo-300"
+                className="rounded bg-code-bg px-1.5 py-0.5 font-mono text-[0.85em] text-accent-strong"
               >
                 {token.text}
               </code>
@@ -69,7 +69,7 @@ export function InlineText({ text }: { text: string }) {
                 href={token.href}
                 target="_blank"
                 rel="noreferrer"
-                className="text-indigo-400 underline underline-offset-4 hover:text-indigo-300"
+                className="text-accent underline underline-offset-4 hover:text-accent-strong"
               >
                 {token.text}
               </a>

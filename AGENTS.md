@@ -68,9 +68,8 @@ The server resolves image paths so the client never touches the filesystem. In `
 ## Conventions
 
 - Styling is Tailwind utility classes; no standalone CSS modules.
-- Theme tokens (fonts, animations) live in `@theme` in `src/index.css`.
+- Colors are semantic tokens (`--color-bg`, `--color-accent`, `--color-panel`, …) generated from `@theme` in `src/index.css`, with per-palette overrides on `:root[data-theme='…']`. The palette list and selection live in `src/lib/themes.ts`, `src/hooks/useTheme.ts` (localStorage + `data-theme`), and `src/components/ThemeSwitcher.tsx` (picker + deck header). New palettes need both a `[data-theme]` block in `index.css` and an entry in `THEMES`.
 - Icons come from `lucide-react`.
 - React Compiler/Babel preset is enabled (`vite.config.ts`) — follow rules-of-hooks; oxlint enforces this.
 - Server code is plain ESM JavaScript (`"type": "module"`), no build step.
 - No test framework is configured.
-- Dark theme base color is `#0b0f1a`.

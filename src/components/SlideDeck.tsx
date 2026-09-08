@@ -14,6 +14,7 @@ import {
 import type { Slide } from '../lib/types'
 import { InlineText } from './InlineText'
 import { SlideView } from './SlideView'
+import { ThemeSwitcher } from './ThemeSwitcher'
 
 interface SlideDeckProps {
   slides: Slide[]
@@ -34,7 +35,7 @@ const SHORTCUTS = [
 
 function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="rounded-md border border-white/15 bg-white/10 px-2 py-1 font-mono text-xs text-slate-200">
+    <kbd className="rounded-md border border-border/15 bg-surface/10 px-2 py-1 font-mono text-xs text-ink">
       {children}
     </kbd>
   )
@@ -180,7 +181,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
     })
 
   return (
-    <div className="relative h-full overflow-hidden bg-[#0b0f1a] text-slate-200">
+    <div className="relative h-full overflow-hidden bg-bg text-ink">
       <div
         key={current.id}
         className="animate-slide-in absolute inset-0 flex items-center justify-center p-12 sm:p-16"
@@ -195,7 +196,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
               type="button"
               onClick={onExit}
               title="All presentations"
-              className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
+              className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
             >
               <Presentation className="h-5 w-5" />
             </button>
@@ -204,17 +205,18 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
             type="button"
             onClick={() => setShowHelp(true)}
             title="Help (H)"
-            className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
+            className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
           >
             <HelpCircle className="h-5 w-5" />
           </button>
         </div>
 
-        <span className="rounded-full bg-white/10 px-3 py-1 font-mono text-sm text-slate-300">
+        <span className="rounded-full bg-surface/10 px-3 py-1 font-mono text-sm text-ink">
           {index + 1} / {total}
         </span>
 
         <div className="ml-auto flex gap-2">
+          <ThemeSwitcher />
           <button
             type="button"
             onClick={() => {
@@ -222,7 +224,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
               setShowOverview((current) => !current)
             }}
             title="Overview (O)"
-            className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
+            className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
           >
             <LayoutGrid className="h-5 w-5" />
           </button>
@@ -230,7 +232,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
             type="button"
             onClick={() => void toggleFullscreen()}
             title="Fullscreen (F)"
-            className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
+            className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
           >
             {isFullscreen ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
           </button>
@@ -243,14 +245,14 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
           onClick={prev}
           disabled={index === 0}
           title="Previous (←)"
-          className="rounded-full bg-white/10 p-2.5 text-slate-300 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full bg-surface/10 p-2.5 text-ink transition hover:bg-surface/20 hover:text-heading disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface/10">
           <div
-            className="h-full rounded-full bg-indigo-400 transition-[width] duration-300 ease-out"
+            className="h-full rounded-full bg-accent transition-[width] duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -260,28 +262,28 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
           onClick={next}
           disabled={index === total - 1}
           title="Next (→)"
-          className="rounded-full bg-white/10 p-2.5 text-slate-300 transition hover:bg-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full bg-surface/10 p-2.5 text-ink transition hover:bg-surface/20 hover:text-heading disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
       </footer>
 
       {index === 0 && !showHelp && !showOverview && (
-        <div className="animate-slide-in absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm text-slate-300">
+        <div className="animate-slide-in absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/10 px-4 py-2 text-sm text-ink">
           Press <Kbd>→</Kbd> to start
-          <span className="text-slate-500">·</span>
+          <span className="text-faint">·</span>
           <Kbd>H</Kbd> for shortcuts
         </div>
       )}
 
       {showOverview && (
-        <div className="absolute inset-0 z-20 overflow-y-auto bg-black/90 p-8 backdrop-blur-sm">
+        <div className="absolute inset-0 z-20 overflow-y-auto bg-overlay/90 p-8 backdrop-blur-sm">
           <div className="mx-auto w-full max-w-6xl">
             <div className="mb-6 flex items-end justify-between">
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-heading">
                 {presentationTitle ?? 'Overview'}
               </h2>
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-faint">
                 {normalizedQuery.length > 0
                   ? `${matching.length} / ${total} slides`
                   : `${total} slides`}
@@ -289,7 +291,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
             </div>
 
             <div className="relative mb-6">
-              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-faint" />
               <input
                 type="search"
                 value={query}
@@ -297,12 +299,12 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
                 placeholder="Search slides…"
                 aria-label="Search slides"
                 autoFocus
-                className="w-full max-w-md rounded-full border border-white/10 bg-white/5 py-2 pr-4 pl-9 text-sm text-slate-200 outline-none transition placeholder:text-slate-500 focus:border-indigo-400/60 focus:bg-white/10"
+                className="w-full max-w-md rounded-full border border-border/10 bg-surface/5 py-2 pr-4 pl-9 text-sm text-ink outline-none transition placeholder:text-faint focus:border-accent/60 focus:bg-surface/10"
               />
             </div>
 
             {matching.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-white/5 p-10 text-center text-sm text-slate-400">
+              <div className="rounded-xl border border-border/10 bg-surface/5 p-10 text-center text-sm text-muted">
                 No slides match “{query.trim()}”.
               </div>
             ) : (
@@ -317,18 +319,18 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
                     }}
                     className={`rounded-xl border p-5 text-left transition ${
                       i === index
-                        ? 'border-indigo-400 bg-indigo-400/10'
-                        : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
+                        ? 'border-accent bg-accent/10'
+                        : 'border-border/10 bg-surface/5 hover:border-border/30 hover:bg-surface/10'
                     }`}
                   >
-                    <span className="font-mono text-xs text-slate-500">
+                    <span className="font-mono text-xs text-faint">
                       {String(i + 1).padStart(2, '0')}
                     </span>
-                    <span className="mt-2 block text-base leading-snug font-medium text-white">
+                    <span className="mt-2 block text-base leading-snug font-medium text-heading">
                       <InlineText text={slide.title} />
                     </span>
                     {slide.subtitle && (
-                      <span className="mt-1 block text-sm text-slate-400">
+                      <span className="mt-1 block text-sm text-muted">
                         <InlineText text={slide.subtitle} />
                       </span>
                     )}
@@ -341,14 +343,14 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
       )}
 
       {showHelp && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-black/80 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111827] p-8 shadow-2xl">
+        <div className="absolute inset-0 z-30 grid place-items-center bg-overlay/80 p-6 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-border/10 bg-panel p-8 shadow-2xl">
             <div className="flex items-start justify-between">
-              <h2 className="text-2xl font-semibold text-white">Keyboard shortcuts</h2>
+              <h2 className="text-2xl font-semibold text-heading">Keyboard shortcuts</h2>
               <button
                 type="button"
                 onClick={() => setShowHelp(false)}
-                className="text-slate-400 transition hover:text-white"
+                className="text-muted transition hover:text-heading"
                 aria-label="Close help"
               >
                 <X className="h-5 w-5" />
@@ -358,7 +360,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
             <dl className="mt-6 space-y-3 text-sm">
               {SHORTCUTS.map((shortcut) => (
                 <div key={shortcut.keys} className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-400">{shortcut.action}</dt>
+                  <dt className="text-muted">{shortcut.action}</dt>
                   <dd>
                     <Kbd>{shortcut.keys}</Kbd>
                   </dd>
