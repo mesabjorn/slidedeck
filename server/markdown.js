@@ -10,7 +10,10 @@ export function resolveMediaPath(src, presentationId) {
   if (/^(https?:)?\/\//.test(src) || src.startsWith('/') || src.startsWith('data:')) {
     return src
   }
-  const relative = src.replace(/^\.\//, '').replace(new RegExp(`^${presentationId}/`), '')
+  const relative = src
+    .replace(/^\.\//, '')
+    .replace(new RegExp(`^${presentationId}/`), '')
+    .replace(/^images\//, '')
   return `/api/presentations/${presentationId}/images/${relative}`
 }
 

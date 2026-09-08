@@ -8,7 +8,6 @@ import {
   LayoutGrid,
   Presentation,
   Search,
-  Shrink,
   X,
 } from 'lucide-react'
 import type { Slide } from '../lib/types'
@@ -189,54 +188,66 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
         <SlideView slide={current} />
       </div>
 
-      <header className="absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-5 py-4">
-        <div className="flex gap-2">
-          {onExit && (
+      <header className={`absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-5 py-4 ${
+        isFullscreen ? 'justify-center' : ''
+      }`}>
+        {!isFullscreen && (
+          <div className="flex gap-2">
+            {onExit && (
+              <button
+                type="button"
+                onClick={onExit}
+                title="All presentations"
+                className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
+              >
+                <Presentation className="h-5 w-5" />
+              </button>
+            )}
             <button
               type="button"
-              onClick={onExit}
-              title="All presentations"
+              onClick={() => setShowHelp(true)}
+              title="Help (H)"
               className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
             >
-              <Presentation className="h-5 w-5" />
+              <HelpCircle className="h-5 w-5" />
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setShowHelp(true)}
-            title="Help (H)"
-            className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
-          >
-            <HelpCircle className="h-5 w-5" />
-          </button>
-        </div>
+          </div>
+        )}
 
-        <span className="rounded-full bg-surface/10 px-3 py-1 font-mono text-sm text-ink">
+        <span
+          className={`font-mono text-sm ${
+            isFullscreen
+              ? 'text-faint/70'
+              : 'rounded-full bg-surface/10 px-3 py-1 text-ink'
+          }`}
+        >
           {index + 1} / {total}
         </span>
 
-        <div className="ml-auto flex gap-2">
-          <ThemeSwitcher />
-          <button
-            type="button"
-            onClick={() => {
-              setQuery('')
-              setShowOverview((current) => !current)
-            }}
-            title="Overview (O)"
-            className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
-          >
-            <LayoutGrid className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => void toggleFullscreen()}
-            title="Fullscreen (F)"
-            className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
-          >
-            {isFullscreen ? <Shrink className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
-          </button>
-        </div>
+        {!isFullscreen && (
+          <div className="ml-auto flex gap-2">
+            <ThemeSwitcher />
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('')
+                setShowOverview((current) => !current)
+              }}
+              title="Overview (O)"
+              className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
+            >
+              <LayoutGrid className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              title="Fullscreen (F)"
+              className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
+            >
+              <Expand className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </header>
 
       <footer className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-4 px-5 py-4">
