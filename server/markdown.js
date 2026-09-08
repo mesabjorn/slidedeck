@@ -25,7 +25,9 @@ export function resolveMediaInText(text, resolve) {
 export function parseInlineChartData(raw) {
   const [headerPart, ...valueParts] = raw.split(';')
   const labels = headerPart.split(',').map((label) => label.trim())
-  const values = valueParts.map((value) => Number(value.trim()))
+  const values = valueParts
+    .flatMap((part) => part.split(','))
+    .map((value) => Number(value.trim()))
   return { labels, series: [{ name: 'value', values }] }
 }
 

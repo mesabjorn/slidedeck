@@ -25,9 +25,11 @@ export function SlideView({ slide }: { slide: Slide }) {
       )}
 
       {slide.charts && slide.charts.length > 0 && (
-        <div className="mx-auto mt-10 w-full max-w-xl space-y-8">
+        <div className="mx-auto mt-10 grid w-full max-w-4xl grid-cols-1 gap-6 lg:grid-cols-2">
           {slide.charts.map((chart, i) => (
-            <ChartView key={i} chart={chart} />
+            <div key={i} className={slide.charts?.length === 1 ? 'lg:col-span-2' : ''}>
+              <ChartView chart={chart} />
+            </div>
           ))}
         </div>
       )}

@@ -51,7 +51,7 @@ Key files:
 - `src/components/SlideDeck.tsx` — navigation, keyboard shortcuts, fullscreen, overview grid, help modal
 - `src/components/SlideView.tsx` — renders one slide (including charts)
 - `src/components/InlineText.tsx` — renders inline markdown (bold, italic, code, links, tooltips, inline images)
-- `src/components/ChartView.tsx` — hand-rolled SVG bar/line/pie charts with hover tooltips
+- `src/components/ChartView.tsx` — hand-rolled SVG bar/line/pie charts with hover tooltips (pie has a legend)
 - `src/components/Tooltip.tsx` — tooltip popover + inline tooltip component
 - `src/components/PresentationPicker.tsx` — deck chooser using server-provided slide counts
 
@@ -63,7 +63,7 @@ Slides are separated by `---`. Parser rules in `server/markdown.js`:
 - `## Subtitle` — subtitle line(s), joined with a space
 - `![alt](path)` — block image (first one wins)
 - `![chart:bar](data/sales.csv)` / `chart:line` / `chart:pie` — block chart; data from a CSV under `data/` or inline: `![chart:pie](inline:Q1,Q2;10,15)`
-- `- item` / `* item` / `1. item` — bullet items (both bullets and numbered collapse into `items`)
+- `- item` / `* item` / `+ item` / `1. item` — bullet items (bullets and numbered collapse into `items`)
 - Any other non-`#`/`>` line — appended to subtitle
 - Inline markdown inside titles/subtitles/items: `**bold**`, `*italic*`, `` `code` ``, `[text](url)`, `[text](tooltip:hint)`, `![alt](src)`
 
@@ -71,7 +71,9 @@ Slides are separated by `---`. Parser rules in `server/markdown.js`:
 
 - CSV convention: first header cell names the label column; remaining columns become series; each row is `label,value[,value…]`. `server/csv.js` coerces numeric cells to numbers.
 - The slides API inlines parsed chart data as `{ labels, series: [{ name, values }] }`, so the client never fetches CSVs.
-- Inline syntax `inline:Label1,Label2;v1,v2` produces a single `value` series.
+- Inline syntax `inline:Label1,Label2;v1,v2` produces a single `value` series; values may be separated by commas or semicolons (`inline:Q1,Q2,Q3,Q4;28;34;21;17` works too).
+- Inline values are coerced with `Number`; a non-numeric value becomes `NaN`, serializes to JSON `null`, and is skipped by the charts — keep inline values numeric.
+- Charts render inside `SlideView` in a responsive two-column grid; a lone chart spans full width. Pie charts show a legend next to the circle.
 
 ## Media path resolution
 
