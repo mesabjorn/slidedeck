@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { ArrowRight, FileWarning, Layers, Loader2, Presentation } from 'lucide-react'
 import type { PresentationMeta } from '../lib/types'
 
@@ -15,35 +14,6 @@ export function PresentationPicker({
   error,
   onSelect,
 }: PresentationPickerProps) {
-  const [counts, setCounts] = useState<Record<string, number>>({})
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function fetchCounts(): Promise<void> {
-      const entries = await Promise.all(
-        presentations.map(async (presentation) => {
-          try {
-            const res = await fetch(`${presentation.id}/slides/index.json`)
-            if (!res.ok) return { id: presentation.id, count: 0 }
-            const files: unknown = await res.json()
-            return { id: presentation.id, count: Array.isArray(files) ? files.length : 0 }
-          } catch {
-            return { id: presentation.id, count: 0 }
-          }
-        }),
-      )
-      if (!cancelled) {
-        setCounts(Object.fromEntries(entries.map((entry) => [entry.id, entry.count])))
-      }
-    }
-
-    if (presentations.length > 0) void fetchCounts()
-    return () => {
-      cancelled = true
-    }
-  }, [presentations])
-
   if (loading) {
     return (
       <main className="grid h-full place-items-center bg-[#0b0f1a]">
@@ -63,7 +33,8 @@ export function PresentationPicker({
           <h1 className="text-2xl font-semibold text-white">Could not load presentations</h1>
           <p className="text-sm text-slate-400">{error}</p>
           <p className="text-xs text-slate-500">
-            Check that <code className="rounded bg-white/10 px-1 py-0.5 font-mono">public/presentations.json</code>{' '}
+            Make sure the backend is running and{' '}
+            <code className="rounded bg-white/10 px-1 py-0.5 font-mono">server/content/presentations.json</code>{' '}
             exists and points at valid presentation folders.
           </p>
         </div>
@@ -79,9 +50,9 @@ export function PresentationPicker({
           <h1 className="text-2xl font-semibold text-white">No presentations found</h1>
           <p className="text-sm text-slate-400">
             Add a folder like{' '}
-            <code className="rounded bg-white/10 px-1 py-0.5 font-mono">public/presentation1</code>{' '}
+            <code className="rounded bg-white/10 px-1 py-0.5 font-mono">server/content/presentation1</code>{' '}
             and list it in{' '}
-            <code className="rounded bg-white/10 px-1 py-0.5 font-mono">public/presentations.json</code>.
+            <code className="rounded bg-white/10 px-1 py-0.5 font-mono">server/content/presentations.json</code>.
           </p>
         </div>
       </main>
@@ -107,9 +78,9 @@ export function PresentationPicker({
             >
               <div className="flex items-center justify-between text-indigo-300">
                 <Presentation className="h-6 w-6" />
-                {presentation.id in counts && (
+                {presentation.slideCount !== undefined && (
                   <span className="rounded-full bg-white/10 px-2.5 py-0.5 font-mono text-xs text-slate-300">
-                    {counts[presentation.id]} slides
+                    {presentation.slideCount} slides
                   </span>
                 )}
               </div>

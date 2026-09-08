@@ -15,4 +15,5 @@ export interface PresentationMeta {
   id: string
   title: string
   description?: string
+  slideCount?: number
 }

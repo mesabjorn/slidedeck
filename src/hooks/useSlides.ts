@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { parseSlides, resolveMediaInText, resolveMediaPath } from '../lib/markdown'
 import type { Slide } from '../lib/types'
 
 interface SlidesState {
@@ -14,6 +13,11 @@ interface DeckResult {
   error: string | null
 }
 
+interface SlidesResponse {
+  id: string
+  slides: Slide[]
+}
+
 export function useSlides(presentationId: string | null): SlidesState {
   const [result, setResult] = useState<DeckResult | null>(null)
 
@@ -25,33 +29,13 @@ export function useSlides(presentationId: string | null): SlidesState {
 
     async function load(): Promise<void> {
       try {
-        const resolve = (src: string) => resolveMediaPath(src, id)
-
-        const manifestRes = await fetch(`${id}/slides/index.json`)
-        if (!manifestRes.ok) {
-          throw new Error(`Failed to load ${id}/slides/index.json (${manifestRes.status})`)
+        const res = await fetch(`/api/presentations/${id}/slides`)
+        if (!res.ok) {
+          throw new Error(`Failed to load ${id} (${res.status})`)
         }
-        const files: string[] = await manifestRes.json()
-
-        const parsed = await Promise.all(
-          files.map(async (file) => {
-            const res = await fetch(`${id}/slides/${file}`)
-            if (!res.ok) {
-              throw new Error(`Failed to load ${id}/slides/${file} (${res.status})`)
-            }
-            const text = await res.text()
-            return parseSlides(text, file).map((slide) => ({
-              ...slide,
-              title: resolveMediaInText(slide.title, resolve),
-              subtitle: slide.subtitle ? resolveMediaInText(slide.subtitle, resolve) : undefined,
-              items: slide.items.map((item) => resolveMediaInText(item, resolve)),
-              image: slide.image ? { ...slide.image, src: resolve(slide.image.src) } : undefined,
-            }))
-          }),
-        )
-
+        const data = (await res.json()) as SlidesResponse
         if (!cancelled) {
-          setResult({ id, slides: parsed.flat(), error: null })
+          setResult({ id, slides: data.slides, error: null })
         }
       } catch (err) {
         if (!cancelled) {

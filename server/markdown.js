@@ -1,5 +1,3 @@
-import type { Slide, SlideImage } from './types'
-
 const SLIDE_SEPARATOR_RE = /^---\s*$/m
 const H1_RE = /^#\s+(.*)$/
 const H2_RE = /^##\s+(.*)$/
@@ -8,21 +6,19 @@ const BULLET_RE = /^[-*+]\s+(.*)$/
 const NUMBERED_RE = /^\d+[.)]\s+(.*)$/
 const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g
 
-export function resolveMediaPath(src: string, presentationId: string): string {
+export function resolveMediaPath(src, presentationId) {
   if (/^(https?:)?\/\//.test(src) || src.startsWith('/') || src.startsWith('data:')) {
     return src
   }
-  if (src.startsWith(`${presentationId}/`)) {
-    return src
-  }
-  return `${presentationId}/${src.replace(/^\.\//, '')}`
+  const relative = src.replace(/^\.\//, '').replace(new RegExp(`^${presentationId}/`), '')
+  return `/api/presentations/${presentationId}/images/${relative}`
 }
 
-export function resolveMediaInText(text: string, resolve: (src: string) => string): string {
+export function resolveMediaInText(text, resolve) {
   return text.replace(INLINE_IMAGE_RE, (_match, alt, src) => `![${alt}](${resolve(src)})`)
 }
 
-export function parseSlides(source: string, sourceFile: string): Slide[] {
+export function parseSlides(source, sourceFile) {
   const blocks = source
     .split(SLIDE_SEPARATOR_RE)
     .map((block) => block.trim())
@@ -30,14 +26,14 @@ export function parseSlides(source: string, sourceFile: string): Slide[] {
 
   return blocks
     .map((block, index) => parseSlide(block, sourceFile, index))
-    .filter((slide): slide is Slide => slide !== null)
+    .filter((slide) => slide !== null)
 }
 
-function parseSlide(block: string, sourceFile: string, index: number): Slide | null {
+function parseSlide(block, sourceFile, index) {
   let title = ''
-  const subtitleLines: string[] = []
-  const items: string[] = []
-  let image: SlideImage | undefined
+  const subtitleLines = []
+  const items = []
+  let image
 
   for (const rawLine of block.split('\n')) {
     const line = rawLine.trim()

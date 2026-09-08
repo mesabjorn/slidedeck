@@ -19,9 +19,9 @@ export function usePresentations(): PresentationsState {
 
     async function load(): Promise<void> {
       try {
-        const res = await fetch('presentations.json')
+        const res = await fetch('/api/presentations')
         if (!res.ok) {
-          throw new Error(`Failed to load presentations.json (${res.status})`)
+          throw new Error(`Failed to load presentations (${res.status})`)
         }
         const presentations = (await res.json()) as PresentationMeta[]
         if (!cancelled) {

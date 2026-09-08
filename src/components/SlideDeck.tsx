@@ -7,6 +7,7 @@ import {
   HelpCircle,
   LayoutGrid,
   Presentation,
+  Search,
   Shrink,
   X,
 } from 'lucide-react'
@@ -45,6 +46,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverview, setShowOverview] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [query, setQuery] = useState('')
 
   const goTo = useCallback((target: number) => {
     setIndex(Math.min(Math.max(target, 0), total - 1))
@@ -70,6 +72,11 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
     }
   }, [])
 
+  const resetOverview = useCallback(() => {
+    setShowOverview(false)
+    setQuery('')
+  }, [])
+
   useEffect(() => {
     function onFullscreenChange() {
       setIsFullscreen(Boolean(document.fullscreenElement))
@@ -81,6 +88,17 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.metaKey || event.ctrlKey || event.altKey) return
+
+      const target = event.target as HTMLElement
+      const isTyping =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable
+
+      if (isTyping) {
+        if (event.key === 'Escape') resetOverview()
+        return
+      }
 
       if (showHelp) {
         if (event.key === 'Escape' || event.key === 'h' || event.key === 'H' || event.key === '?') {
@@ -96,24 +114,24 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
         case ' ':
         case 'Enter':
           event.preventDefault()
-          setShowOverview(false)
+          resetOverview()
           next()
           break
         case 'ArrowLeft':
         case 'ArrowUp':
         case 'PageUp':
           event.preventDefault()
-          setShowOverview(false)
+          resetOverview()
           prev()
           break
         case 'Home':
           event.preventDefault()
-          setShowOverview(false)
+          resetOverview()
           goTo(0)
           break
         case 'End':
           event.preventDefault()
-          setShowOverview(false)
+          resetOverview()
           goTo(total - 1)
           break
         case 'f':
@@ -124,6 +142,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
         case 'O':
         case 'g':
         case 'G':
+          setQuery('')
           setShowOverview((current) => !current)
           break
         case 'h':
@@ -135,7 +154,7 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
           if (document.fullscreenElement) {
             void document.exitFullscreen()
           } else {
-            setShowOverview(false)
+            resetOverview()
           }
           break
       }
@@ -143,10 +162,22 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [goTo, next, prev, showHelp, toggleFullscreen, total])
+  }, [goTo, next, prev, resetOverview, showHelp, toggleFullscreen, total])
 
   const current = slides[index] ?? slides[0]
   const progress = total > 1 ? (index / (total - 1)) * 100 : 100
+
+  const normalizedQuery = query.trim().toLowerCase()
+  const matching = slides
+    .map((slide, i) => ({ slide, i }))
+    .filter(({ slide }) => {
+      if (normalizedQuery.length === 0) return true
+      return (
+        slide.title.toLowerCase().includes(normalizedQuery) ||
+        slide.subtitle?.toLowerCase().includes(normalizedQuery) ||
+        slide.items.some((item) => item.toLowerCase().includes(normalizedQuery))
+      )
+    })
 
   return (
     <div className="relative h-full overflow-hidden bg-[#0b0f1a] text-slate-200">
@@ -186,7 +217,10 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
         <div className="ml-auto flex gap-2">
           <button
             type="button"
-            onClick={() => setShowOverview((current) => !current)}
+            onClick={() => {
+              setQuery('')
+              setShowOverview((current) => !current)
+            }}
             title="Overview (O)"
             className="rounded-full bg-white/10 p-2.5 text-slate-400 transition hover:bg-white/20 hover:text-white"
           >
@@ -247,37 +281,61 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
               <h2 className="text-xl font-semibold text-white">
                 {presentationTitle ?? 'Overview'}
               </h2>
-              <span className="text-sm text-slate-500">{total} slides</span>
+              <span className="text-sm text-slate-500">
+                {normalizedQuery.length > 0
+                  ? `${matching.length} / ${total} slides`
+                  : `${total} slides`}
+              </span>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {slides.map((slide, i) => (
-              <button
-                type="button"
-                key={slide.id}
-                onClick={() => {
-                  goTo(i)
-                  setShowOverview(false)
-                }}
-                className={`rounded-xl border p-5 text-left transition ${
-                  i === index
-                    ? 'border-indigo-400 bg-indigo-400/10'
-                    : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
-                }`}
-              >
-                <span className="font-mono text-xs text-slate-500">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span className="mt-2 block text-base leading-snug font-medium text-white">
-                  <InlineText text={slide.title} />
-                </span>
-                {slide.subtitle && (
-                  <span className="mt-1 block text-sm text-slate-400">
-                    <InlineText text={slide.subtitle} />
-                  </span>
-                )}
-              </button>
-            ))}
+
+            <div className="relative mb-6">
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search slides…"
+                aria-label="Search slides"
+                autoFocus
+                className="w-full max-w-md rounded-full border border-white/10 bg-white/5 py-2 pr-4 pl-9 text-sm text-slate-200 outline-none transition placeholder:text-slate-500 focus:border-indigo-400/60 focus:bg-white/10"
+              />
             </div>
+
+            {matching.length === 0 ? (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-10 text-center text-sm text-slate-400">
+                No slides match “{query.trim()}”.
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {matching.map(({ slide, i }) => (
+                  <button
+                    type="button"
+                    key={slide.id}
+                    onClick={() => {
+                      goTo(i)
+                      resetOverview()
+                    }}
+                    className={`rounded-xl border p-5 text-left transition ${
+                      i === index
+                        ? 'border-indigo-400 bg-indigo-400/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10'
+                    }`}
+                  >
+                    <span className="font-mono text-xs text-slate-500">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span className="mt-2 block text-base leading-snug font-medium text-white">
+                      <InlineText text={slide.title} />
+                    </span>
+                    {slide.subtitle && (
+                      <span className="mt-1 block text-sm text-slate-400">
+                        <InlineText text={slide.subtitle} />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
