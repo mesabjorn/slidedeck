@@ -2,6 +2,7 @@ const SLIDE_SEPARATOR_RE = /^---\s*$/m
 const H1_RE = /^#\s+(.*)$/
 const H2_RE = /^##\s+(.*)$/
 const IMAGE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/
+const CHART_RE = /^chart:(\w+)$/
 const BULLET_RE = /^[-*+]\s+(.*)$/
 const NUMBERED_RE = /^\d+[.)]\s+(.*)$/
 const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g
@@ -21,6 +22,13 @@ export function resolveMediaInText(text, resolve) {
   return text.replace(INLINE_IMAGE_RE, (_match, alt, src) => `![${alt}](${resolve(src)})`)
 }
 
+export function parseInlineChartData(raw) {
+  const [headerPart, ...valueParts] = raw.split(';')
+  const labels = headerPart.split(',').map((label) => label.trim())
+  const values = valueParts.map((value) => Number(value.trim()))
+  return { labels, series: [{ name: 'value', values }] }
+}
+
 export function parseSlides(source, sourceFile) {
   const blocks = source
     .split(SLIDE_SEPARATOR_RE)
@@ -36,6 +44,7 @@ function parseSlide(block, sourceFile, index) {
   let title = ''
   const subtitleLines = []
   const items = []
+  const charts = []
   let image
 
   for (const rawLine of block.split('\n')) {
@@ -56,6 +65,11 @@ function parseSlide(block, sourceFile, index) {
 
     const img = IMAGE_RE.exec(line)
     if (img) {
+      const chartType = CHART_RE.exec(img[1])
+      if (chartType) {
+        charts.push({ type: chartType[1], src: img[2] })
+        continue
+      }
       if (!image) image = { src: img[2], alt: img[1] }
       continue
     }
@@ -71,7 +85,7 @@ function parseSlide(block, sourceFile, index) {
     }
   }
 
-  const hasContent = items.length > 0 || subtitleLines.length > 0 || image !== undefined
+  const hasContent = items.length > 0 || subtitleLines.length > 0 || charts.length > 0 || image !== undefined
   if (!title && !hasContent) {
     return null
   }
@@ -82,5 +96,6 @@ function parseSlide(block, sourceFile, index) {
     subtitle: subtitleLines.length > 0 ? subtitleLines.join(' ') : undefined,
     items,
     image,
+    charts: charts.length > 0 ? charts : undefined,
   }
 }

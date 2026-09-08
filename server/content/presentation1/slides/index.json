@@ -1,1 +1,9 @@
-["01-intro.md","02-features.md","03-usage.md","04-outro.md"]
+[
+  "01-intro.md",
+  "02-features.md",
+  "03-usage.md",
+  "04-outro.md",
+  "05-charts.md",
+  "05-charts-line.md",
+  "05-charts-pie.md"
+]

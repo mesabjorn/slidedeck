@@ -1,4 +1,5 @@
 import type { Slide } from '../lib/types'
+import { ChartView } from './ChartView'
 import { InlineText } from './InlineText'
 
 export function SlideView({ slide }: { slide: Slide }) {
@@ -21,6 +22,14 @@ export function SlideView({ slide }: { slide: Slide }) {
           loading="lazy"
           className="mx-auto mt-10 max-h-[36vh] max-w-full rounded-2xl border border-border/10 object-contain shadow-2xl"
         />
+      )}
+
+      {slide.charts && slide.charts.length > 0 && (
+        <div className="mx-auto mt-10 w-full max-w-xl space-y-8">
+          {slide.charts.map((chart, i) => (
+            <ChartView key={i} chart={chart} />
+          ))}
+        </div>
       )}
 
       {slide.items.length > 0 && (

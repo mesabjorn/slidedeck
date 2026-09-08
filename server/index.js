@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
-import { parseSlides, resolveMediaInText, resolveMediaPath } from './markdown.js'
+import { parseSlides, parseInlineChartData, resolveMediaInText, resolveMediaPath } from './markdown.js'
+import { parseCsv, csvToChartData } from './csv.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const CONTENT_DIR = path.join(__dirname, 'content')
@@ -15,6 +16,27 @@ const app = express()
 
 async function readJson(file) {
   return JSON.parse(await readFile(file, 'utf8'))
+}
+
+function resolveDeckFile(id, relative) {
+  const deckDir = path.join(CONTENT_DIR, id)
+  const rel = relative.replace(/^\.\//, '').replace(new RegExp(`^${id}/`), '')
+  const filePath = path.resolve(deckDir, rel)
+  return filePath.startsWith(deckDir + path.sep) ? filePath : null
+}
+
+async function resolveCharts(charts, id) {
+  return Promise.all(
+    charts.map(async (chart) => {
+      if (chart.src.startsWith('inline:')) {
+        return { type: chart.type, data: parseInlineChartData(chart.src.slice('inline:'.length)) }
+      }
+      const filePath = resolveDeckFile(id, chart.src)
+      if (!filePath) throw new Error(`Invalid chart data path: ${chart.src}`)
+      const text = await readFile(filePath, 'utf8')
+      return { type: chart.type, data: csvToChartData(parseCsv(text)) }
+    }),
+  )
 }
 
 app.get('/api/presentations', async (_req, res) => {
@@ -51,13 +73,17 @@ app.get('/api/presentations/:id/slides', async (req, res) => {
     const parsed = await Promise.all(
       files.map(async (file) => {
         const text = await readFile(path.join(CONTENT_DIR, id, 'slides', file), 'utf8')
-        return parseSlides(text, file).map((slide) => ({
-          ...slide,
-          title: resolveMediaInText(slide.title, resolve),
-          subtitle: slide.subtitle ? resolveMediaInText(slide.subtitle, resolve) : undefined,
-          items: slide.items.map((item) => resolveMediaInText(item, resolve)),
-          image: slide.image ? { ...slide.image, src: resolve(slide.image.src) } : undefined,
-        }))
+        const slides = parseSlides(text, file)
+        return Promise.all(
+          slides.map(async (slide) => ({
+            ...slide,
+            title: resolveMediaInText(slide.title, resolve),
+            subtitle: slide.subtitle ? resolveMediaInText(slide.subtitle, resolve) : undefined,
+            items: slide.items.map((item) => resolveMediaInText(item, resolve)),
+            image: slide.image ? { ...slide.image, src: resolve(slide.image.src) } : undefined,
+            charts: slide.charts ? await resolveCharts(slide.charts, id) : undefined,
+          })),
+        )
       }),
     )
 
@@ -84,6 +110,27 @@ app.get('/api/presentations/:id/images/*splat', (req, res) => {
   res.sendFile(filePath, (err) => {
     if (err) res.status(404).json({ error: 'File not found' })
   })
+})
+
+app.get('/api/presentations/:id/data/*splat', async (req, res) => {
+  const { id, splat } = req.params
+  if (!ID_RE.test(id)) {
+    return res.status(400).json({ error: 'Invalid presentation id' })
+  }
+
+  const dataDir = path.join(CONTENT_DIR, id, 'data')
+  const relative = Array.isArray(splat) ? splat.join('/') : splat
+  const filePath = path.resolve(dataDir, relative)
+  if (!filePath.startsWith(dataDir + path.sep)) {
+    return res.status(400).json({ error: 'Invalid path' })
+  }
+
+  try {
+    const text = await readFile(filePath, 'utf8')
+    res.json(parseCsv(text))
+  } catch {
+    res.status(404).json({ error: 'File not found' })
+  }
 })
 
 if (existsSync(DIST_DIR)) {

@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { InlineTooltip } from './Tooltip'
 
 type Token =
   | { type: 'text'; text: string }
@@ -63,6 +64,15 @@ export function InlineText({ text }: { text: string }) {
               </code>
             )
           case 'link':
+            if (token.href.startsWith('tooltip:')) {
+              return (
+                <InlineTooltip
+                  key={i}
+                  term={token.text}
+                  hint={token.href.slice('tooltip:'.length).trim()}
+                />
+              )
+            }
             return (
               <a
                 key={i}
