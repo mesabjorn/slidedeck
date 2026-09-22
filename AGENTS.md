@@ -11,9 +11,9 @@ SlideDeck is a slide presentation app: a React 19 + TypeScript + Tailwind CSS v4
 - `npm run dev` — start the Express API (port 3001) and the Vite dev server (port 5173) together
 - `npm run dev:client` — Vite dev server only (API must be running separately)
 - `npm run dev:server` — Express server with `--watch`
-- `npm run build` — type-check (`tsc -b`) then build (`vite build` → `dist/`)
-- `npm run lint` — run oxlint
-- `npm run start` — production: run Express, which serves `dist/` and the API
+- `npm run build` — build the client (`npm run build --prefix client` → `client/dist/`)
+- `npm run lint` — oxlint on `server/` plus the client's own `npm run lint`
+- `npm run start` — production: run Express, which serves `client/dist/` and the API
 - `npm run preview` — preview the production build
 
 Always run `npm run lint` and `npm run build` after making changes.

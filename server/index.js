@@ -16,7 +16,7 @@ import { STARTER_SLIDES, STARTER_INDEX } from "./starter_slides.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONTENT_DIR = path.join(__dirname, "content");
-const DIST_DIR = path.join(__dirname, "..", "dist");
+const DIST_DIR = path.join(__dirname, "..", "client", "dist");
 const PORT = Number(process.env.PORT) || 3001;
 
 const ID_RE = /^[\w.-]+$/;
