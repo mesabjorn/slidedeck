@@ -6,7 +6,7 @@ import { usePresentations } from './hooks/usePresentations'
 import { useSlides } from './hooks/useSlides'
 
 function App() {
-  const { presentations, loading: loadingPresentations, error: presentationsError } =
+  const { presentations, loading: loadingPresentations, error: presentationsError, createPresentation } =
     usePresentations()
   const [presentationId, setPresentationId] = useState<string | null>(null)
   const { slides, loading, error } = useSlides(presentationId)
@@ -18,6 +18,7 @@ function App() {
         loading={loadingPresentations}
         error={presentationsError}
         onSelect={setPresentationId}
+        onCreate={createPresentation}
       />
     )
   }

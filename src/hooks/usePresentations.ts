@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { PresentationMeta } from '../lib/types'
 
 interface PresentationsState {
@@ -7,7 +7,7 @@ interface PresentationsState {
   error: string | null
 }
 
-export function usePresentations(): PresentationsState {
+export function usePresentations() {
   const [state, setState] = useState<PresentationsState>({
     presentations: [],
     loading: true,
@@ -44,5 +44,19 @@ export function usePresentations(): PresentationsState {
     }
   }, [])
 
-  return state
+  const createPresentation = useCallback(async (title: string): Promise<PresentationMeta> => {
+    const res = await fetch('/api/presentations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    })
+    if (!res.ok) {
+      throw new Error(`Failed to create presentation (${res.status})`)
+    }
+    const meta = (await res.json()) as PresentationMeta
+    setState((current) => ({ ...current, presentations: [...current.presentations, meta] }))
+    return meta
+  }, [])
+
+  return { ...state, createPresentation }
 }
