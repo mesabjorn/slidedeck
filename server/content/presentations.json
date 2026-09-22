@@ -3,15 +3,5 @@
     "id": "presentation1",
     "title": "SlideDeck — Getting Started",
     "description": "A tour of SlideDeck itself: navigation, features and keyboard shortcuts."
-  },
-  {
-    "id": "presentation2",
-    "title": "Crash Course in Typography",
-    "description": "A short presentation about lists, hierarchy and keeping slides simple."
-  },
-  {
-    "id": "presentation3",
-    "title": "Crash Course in Typography 2",
-    "description": "A short presentation about lists, hierarchy and keeping slides simple."
   }
 ]

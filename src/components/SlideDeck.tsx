@@ -179,6 +179,48 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
       )
     })
 
+  const grouped = matching.reduce<{ name?: string; cards: typeof matching }[]>(
+    (acc, match) => {
+      const name = match.slide.section
+      const last = acc[acc.length - 1]
+      if (last && last.name === name) {
+        last.cards.push(match)
+      } else {
+        acc.push({ name, cards: [match] })
+      }
+      return acc
+    },
+    [],
+  )
+
+  const overviewCard = ({ slide, i }: { slide: Slide; i: number }) => (
+    <button
+      type="button"
+      key={slide.id}
+      onClick={() => {
+        goTo(i)
+        resetOverview()
+      }}
+      className={`rounded-xl border p-5 text-left transition ${
+        i === index
+          ? 'border-accent bg-accent/10'
+          : 'border-border/10 bg-surface/5 hover:border-border/30 hover:bg-surface/10'
+      }`}
+    >
+      <span className="font-mono text-xs text-faint">
+        {String(i + 1).padStart(2, '0')}
+      </span>
+      <span className="mt-2 block text-base leading-snug font-medium text-heading">
+        <InlineText text={slide.title} />
+      </span>
+      {slide.subtitle && (
+        <span className="mt-1 block text-sm text-muted">
+          <InlineText text={slide.subtitle} />
+        </span>
+      )}
+    </button>
+  )
+
   return (
     <div className="relative h-full overflow-hidden bg-bg text-ink">
       <div
@@ -318,34 +360,23 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
               <div className="rounded-xl border border-border/10 bg-surface/5 p-10 text-center text-sm text-muted">
                 No slides match “{query.trim()}”.
               </div>
-            ) : (
+            ) : normalizedQuery.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {matching.map(({ slide, i }) => (
-                  <button
-                    type="button"
-                    key={slide.id}
-                    onClick={() => {
-                      goTo(i)
-                      resetOverview()
-                    }}
-                    className={`rounded-xl border p-5 text-left transition ${
-                      i === index
-                        ? 'border-accent bg-accent/10'
-                        : 'border-border/10 bg-surface/5 hover:border-border/30 hover:bg-surface/10'
-                    }`}
-                  >
-                    <span className="font-mono text-xs text-faint">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <span className="mt-2 block text-base leading-snug font-medium text-heading">
-                      <InlineText text={slide.title} />
-                    </span>
-                    {slide.subtitle && (
-                      <span className="mt-1 block text-sm text-muted">
-                        <InlineText text={slide.subtitle} />
-                      </span>
+                {matching.map(overviewCard)}
+              </div>
+            ) : (
+              <div className="space-y-10">
+                {grouped.map((group, groupIndex) => (
+                  <section key={groupIndex}>
+                    {group.name && (
+                      <h3 className="mb-4 font-mono text-xs tracking-[0.3em] text-faint uppercase">
+                        {group.name}
+                      </h3>
                     )}
-                  </button>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {group.cards.map(overviewCard)}
+                    </div>
+                  </section>
                 ))}
               </div>
             )}

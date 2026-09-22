@@ -18,6 +18,34 @@ async function readJson(file) {
   return JSON.parse(await readFile(file, 'utf8'))
 }
 
+function toSections(value) {
+  const all = Array.isArray(value) ? value : []
+  const isSections =
+    all.length > 0 &&
+    all.every((entry) => entry && typeof entry === 'object' && 'slides' in entry)
+  const sections = isSections ? all : [{ hidden: false, slides: all }]
+  return sections.map((section) => ({
+    name: section.name,
+    hidden: Boolean(section.hidden),
+    entries: (Array.isArray(section.slides) ? section.slides : []).map((entry) =>
+      typeof entry === 'string'
+        ? { file: entry, hidden: false }
+        : { file: entry?.file, hidden: Boolean(entry?.hidden) },
+    ),
+  }))
+}
+
+function visibleSlideEntries(value) {
+  return toSections(value)
+    .filter((section) => !section.hidden)
+    .flatMap((section) => section.entries)
+    .filter((entry) => !entry.hidden)
+}
+
+function visibleSlideFiles(value) {
+  return visibleSlideEntries(value).map((entry) => entry.file)
+}
+
 function resolveDeckFile(id, relative) {
   const deckDir = path.join(CONTENT_DIR, id)
   const rel = relative.replace(/^\.\//, '').replace(new RegExp(`^${id}/`), '')
@@ -48,7 +76,7 @@ app.get('/api/presentations', async (_req, res) => {
           const files = await readJson(
             path.join(CONTENT_DIR, presentation.id, 'slides', 'index.json'),
           )
-          return { ...presentation, slideCount: Array.isArray(files) ? files.length : 0 }
+          return { ...presentation, slideCount: Array.isArray(files) ? visibleSlideFiles(files).length : 0 }
         } catch {
           return { ...presentation, slideCount: 0 }
         }
@@ -67,14 +95,18 @@ app.get('/api/presentations/:id/slides', async (req, res) => {
   }
 
   try {
-    const files = await readJson(path.join(CONTENT_DIR, id, 'slides', 'index.json'))
+    const index = await readJson(path.join(CONTENT_DIR, id, 'slides', 'index.json'))
+    const sections = toSections(index)
     const resolve = (src) => resolveMediaPath(src, id)
 
-    const parsed = await Promise.all(
-      files.map(async (file) => {
-        const text = await readFile(path.join(CONTENT_DIR, id, 'slides', file), 'utf8')
-        const slides = parseSlides(text, file)
-        return Promise.all(
+    const parsed = []
+    for (const section of sections) {
+      if (section.hidden) continue
+      for (const entry of section.entries) {
+        if (entry.hidden) continue
+        const text = await readFile(path.join(CONTENT_DIR, id, 'slides', entry.file), 'utf8')
+        const slides = parseSlides(text, entry.file)
+        const resolved = await Promise.all(
           slides.map(async (slide) => ({
             ...slide,
             title: resolveMediaInText(slide.title, resolve),
@@ -82,12 +114,14 @@ app.get('/api/presentations/:id/slides', async (req, res) => {
             items: slide.items.map((item) => resolveMediaInText(item, resolve)),
             image: slide.image ? { ...slide.image, src: resolve(slide.image.src) } : undefined,
             charts: slide.charts ? await resolveCharts(slide.charts, id) : undefined,
+            section: section.name,
           })),
         )
-      }),
-    )
+        parsed.push(...resolved)
+      }
+    }
 
-    res.json({ id, slides: parsed.flat() })
+    res.json({ id, slides: parsed })
   } catch (err) {
     const status = err && err.code === 'ENOENT' ? 404 : 500
     res.status(status).json({ error: err instanceof Error ? err.message : 'Unknown error' })

@@ -25,6 +25,7 @@ export interface Slide {
   items: string[]
   image?: SlideImage
   charts?: Chart[]
+  section?: string
 }
 
 export interface PresentationMeta {

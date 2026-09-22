@@ -24,7 +24,7 @@ Content flows: files on disk -> Express API -> fetch -> render (no client-side m
 
 1. `server/content/presentations.json` lists decks as `{ id, title, description }`.
 2. Each deck lives under `server/content/<id>/` with:
-   - `slides/index.json` — ordered array of slide filenames (e.g. `["01-intro.md"]`)
+   - `slides/index.json` — ordered slide list; either a flat array of filenames or an array of sections `{ name, slides, hidden? }`. Each entry may be a filename or an object `{ file, hidden }`; `hidden: true` slides (or whole sections) are excluded server-side
    - `slides/*.md` — one markdown file per slide, see format below
    - optional `images/` folder for local media
    - optional `data/*.csv` folder for chart datasets

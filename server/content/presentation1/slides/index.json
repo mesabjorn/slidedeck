@@ -1,9 +1,32 @@
 [
-  "01-intro.md",
-  "02-features.md",
-  "03-usage.md",
-  "04-outro.md",
-  "05-charts.md",
-  "05-charts-line.md",
-  "05-charts-pie.md"
+  {
+    "name": "Start",
+    "slides": [
+      "01-intro.md",
+      "02-features.md"
+    ]
+  },
+  {
+    "name": "Navigation",
+    "slides": [
+      "03-usage.md"
+    ]
+  },
+  {
+    "name": "Charts",
+    "slides": [
+      "05-charts.md",
+      {
+        "file": "05-charts-line.md",
+        "hidden": true
+      },
+      "05-charts-pie.md"
+    ]
+  },
+  {
+    "name": "Wrap up",
+    "slides": [
+      "04-outro.md"
+    ]
+  }
 ]
