@@ -1,0 +1,112 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --animate-slide-in: slide-in 0.35s ease both;
+
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Default theme: Midnight (dark) */
+  --color-bg: #0b0f1a;
+  --color-ink: #e2e8f0;
+  --color-heading: #ffffff;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
+  --color-accent: #818cf8;
+  --color-accent-strong: #a5b4fc;
+  --color-surface: #ffffff;
+  --color-border: #ffffff;
+  --color-panel: #111827;
+  --color-code-bg: #1e293b;
+  --color-overlay: #000000;
+}
+
+:root[data-theme='dusk'] {
+  color-scheme: dark;
+  --color-bg: #150d2b;
+  --color-ink: #e4dcf5;
+  --color-heading: #f3effc;
+  --color-muted: #a49cc0;
+  --color-faint: #6f6790;
+  --color-accent: #a78bfa;
+  --color-accent-strong: #c4b5fd;
+  --color-surface: #ffffff;
+  --color-border: #ffffff;
+  --color-panel: #1e1633;
+  --color-code-bg: #2a2146;
+  --color-overlay: #000000;
+}
+
+:root[data-theme='forest'] {
+  color-scheme: dark;
+  --color-bg: #0a1622;
+  --color-ink: #d6e7ea;
+  --color-heading: #ffffff;
+  --color-muted: #7fa1ab;
+  --color-faint: #52707a;
+  --color-accent: #34d399;
+  --color-accent-strong: #6ee7b7;
+  --color-surface: #ffffff;
+  --color-border: #ffffff;
+  --color-panel: #0f2030;
+  --color-code-bg: #132b3a;
+  --color-overlay: #000000;
+}
+
+:root[data-theme='paper'] {
+  color-scheme: light;
+  --color-bg: #faf7f2;
+  --color-ink: #4a3f38;
+  --color-heading: #2a211d;
+  --color-muted: #8a7f75;
+  --color-faint: #a89a8d;
+  --color-accent: #b45309;
+  --color-accent-strong: #92400e;
+  --color-surface: #2a211d;
+  --color-border: #2a211d;
+  --color-panel: #ffffff;
+  --color-code-bg: #f3ede4;
+  --color-overlay: #ffffff;
+}
+
+:root[data-theme='daylight'] {
+  color-scheme: light;
+  --color-bg: #f8fafc;
+  --color-ink: #334155;
+  --color-heading: #0f172a;
+  --color-muted: #64748b;
+  --color-faint: #94a3b8;
+  --color-accent: #6366f1;
+  --color-accent-strong: #4f46e5;
+  --color-surface: #0f172a;
+  --color-border: #0f172a;
+  --color-panel: #ffffff;
+  --color-code-bg: #e2e8f0;
+  --color-overlay: #ffffff;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-display);
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+  }
+}

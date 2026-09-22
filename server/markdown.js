@@ -1,4 +1,5 @@
 const SLIDE_SEPARATOR_RE = /^---\s*$/m
+const COLUMN_SEPARATOR_RE = /^~~~\s*$/m
 const H1_RE = /^#\s+(.*)$/
 const H2_RE = /^##\s+(.*)$/
 const IMAGE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/
@@ -32,17 +33,25 @@ export function parseInlineChartData(raw) {
 }
 
 export function parseSlides(source, sourceFile) {
-  const blocks = source
-    .split(SLIDE_SEPARATOR_RE)
-    .map((block) => block.trim())
-    .filter((block) => block.length > 0)
-
-  return blocks
+  return splitBlocks(source)
     .map((block, index) => parseSlide(block, sourceFile, index))
     .filter((slide) => slide !== null)
 }
 
-function parseSlide(block, sourceFile, index) {
+export function parseColumns(source, sourceFile) {
+  return splitBlocks(source, COLUMN_SEPARATOR_RE)
+    .map((block, index) => parseSlide(block, sourceFile, index, false))
+    .filter((slide) => slide !== null)
+}
+
+function splitBlocks(source, separator = SLIDE_SEPARATOR_RE) {
+  return source
+    .split(separator)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0)
+}
+
+function parseSlide(block, sourceFile, index, fallbackTitle = true) {
   let title = ''
   const subtitleLines = []
   const items = []
@@ -94,7 +103,7 @@ function parseSlide(block, sourceFile, index) {
 
   return {
     id: `${sourceFile}#${index}`,
-    title: title || sourceFile.replace(/\.md$/i, ''),
+    title: title || (fallbackTitle ? sourceFile.replace(/\.md$/i, '') : ''),
     subtitle: subtitleLines.length > 0 ? subtitleLines.join(' ') : undefined,
     items,
     image,

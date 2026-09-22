@@ -1,0 +1,35 @@
+[
+  {
+    "name": "Start",
+    "slides": [
+      "01-welcome.md",
+      "02-structure.md"
+    ]
+  },
+  {
+    "name": "Next steps",
+    "slides": [
+      "03-getting-started.md"
+    ]
+  },
+  {
+    "name": "Layouts",
+    "slides": [
+      {
+        "file": "04-layouts.md",
+        "layout": [
+          1,
+          1
+        ]
+      },
+      {
+        "file": "05-columns.md",
+        "layout": [
+          1,
+          1,
+          1
+        ]
+      }
+    ]
+  }
+]

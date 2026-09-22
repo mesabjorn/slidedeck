@@ -1,6 +1,7 @@
 # SlideDeck
 
-Presentations from plain markdown, powered by React + Tailwind.
+
+## Presentations from plain markdown, powered by React + Tailwind.
 
 - Load slides from .md files with zero backend
 - Type-safe parsing of title, subtitle and lists

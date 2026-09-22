@@ -59,6 +59,7 @@ Key files:
 
 Slides are separated by `---`. Parser rules in `server/markdown.js`:
 
+- Layout files (an entry in `slides/index.json` with a `layout` array of flex weights) split on `~~~` instead: each `~~~`-separated block becomes one column, and `---` still divides slides. Each column should have at most one `#` heading (the first `#` of the first block also becomes the slide title).
 - `# Title` — slide title (first one wins)
 - `## Subtitle` — subtitle line(s), joined with a space
 - `![alt](path)` — block image (first one wins)

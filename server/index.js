@@ -5,13 +5,14 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import {
   parseSlides,
+  parseColumns,
   parseInlineChartData,
   resolveMediaInText,
   resolveMediaPath,
 } from "./markdown.js";
 import { parseCsv, csvToChartData } from "./csv.js";
 
-import { STARTER_SLIDES } from "./starter_slides.js";
+import { STARTER_SLIDES, STARTER_INDEX } from "./starter_slides.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONTENT_DIR = path.join(__dirname, "content");
@@ -21,11 +22,6 @@ const PORT = Number(process.env.PORT) || 3001;
 const ID_RE = /^[\w.-]+$/;
 const app = express();
 app.use(express.json());
-
-const STARTER_INDEX = [
-  { name: "Start", slides: ["01-welcome.md", "02-structure.md"] },
-  { name: "Next steps", slides: ["03-getting-started.md"] },
-];
 
 async function readJson(file) {
   return JSON.parse(await readFile(file, "utf8"));
@@ -49,6 +45,19 @@ function ensureUniqueId(base, existingIds) {
   return id;
 }
 
+function normalizeLayout(layout) {
+  const raw = Array.isArray(layout) ? layout : layout?.columns;
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const columns = raw.map((column) => {
+    const value =
+      typeof column === "object" && column !== null
+        ? Number(column.width ?? column.flex)
+        : Number(column);
+    return Number.isFinite(value) && value > 0 ? value : 1;
+  });
+  return { columns };
+}
+
 function toSections(value) {
   const all = Array.isArray(value) ? value : [];
   const isSections =
@@ -63,8 +72,12 @@ function toSections(value) {
     entries: (Array.isArray(section.slides) ? section.slides : []).map(
       (entry) =>
         typeof entry === "string"
-          ? { file: entry, hidden: false }
-          : { file: entry?.file, hidden: Boolean(entry?.hidden) },
+          ? { file: entry, hidden: false, layout: undefined }
+          : {
+              file: entry?.file,
+              hidden: Boolean(entry?.hidden),
+              layout: normalizeLayout(entry?.layout),
+            },
     ),
   }));
 }
@@ -193,6 +206,7 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
     const index = await readJson(
       path.join(CONTENT_DIR, id, "slides", "index.json"),
     );
+
     const sections = toSections(index);
     const resolve = (src) => resolveMediaPath(src, id);
 
@@ -205,6 +219,41 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
           path.join(CONTENT_DIR, id, "slides", entry.file),
           "utf8",
         );
+
+        if (entry.layout) {
+          const blocks = parseColumns(text, entry.file);
+          const columns = await Promise.all(
+            blocks.map(async (block, blockIndex) => ({
+              title: block.title
+                ? resolveMediaInText(block.title, resolve)
+                : "",
+              subtitle: block.subtitle
+                ? resolveMediaInText(block.subtitle, resolve)
+                : undefined,
+              items: block.items.map((item) =>
+                resolveMediaInText(item, resolve),
+              ),
+              image: block.image
+                ? { ...block.image, src: resolve(block.image.src) }
+                : undefined,
+              charts: block.charts
+                ? await resolveCharts(block.charts, id)
+                : undefined,
+              flex: entry.layout.columns[
+                blockIndex % entry.layout.columns.length
+              ],
+            })),
+          );
+          parsed.push({
+            id: `${entry.file}#layout`,
+            title: columns[0]?.title || entry.file.replace(/\.md$/i, ""),
+            items: [],
+            section: section.name,
+            columns,
+          });
+          continue;
+        }
+
         const slides = parseSlides(text, entry.file);
         const resolved = await Promise.all(
           slides.map(async (slide) => ({
@@ -226,7 +275,6 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
         parsed.push(...resolved);
       }
     }
-
     res.json({ id, slides: parsed });
   } catch (err) {
     const status = err && err.code === "ENOENT" ? 404 : 500;
