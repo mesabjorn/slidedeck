@@ -24,7 +24,7 @@ Content flows: files on disk -> Express API -> fetch -> render (no client-side m
 
 1. `server/content/presentations.json` lists decks as `{ id, title, description }`.
 2. Each deck lives under `server/content/<id>/` with:
-   - `slides/index.json` — ordered slide list; either a flat array of filenames or an array of sections `{ name, slides, hidden? }`. Each entry may be a filename or an object `{ file, hidden }`; `hidden: true` slides (or whole sections) are excluded server-side
+   - `slides/index.json` — ordered slide list; always an array of sections `{ name, slides, hidden? }`. Each slide is an object `{ file, hidden?, layout? }`; `hidden: true` slides (or whole sections) are excluded server-side
    - `slides/*.md` — one markdown file per slide, see format below
    - optional `images/` folder for local media
    - optional `data/*.csv` folder for chart datasets
@@ -59,7 +59,7 @@ Key files:
 
 Slides are separated by `---`. Parser rules in `server/markdown.js`:
 
-- Layout files (an entry in `slides/index.json` with a `layout` array of flex weights) split on `~~~` instead: each `~~~`-separated block becomes one column, and `---` still divides slides. Each column should have at most one `#` heading (the first `#` of the first block also becomes the slide title).
+- Any slide file containing `~~~` becomes a multi-column layout: each `~~~`-separated block is one column, and `---` still divides slides. Column widths default to an equal split (one `~~~` → `[1, 1]`, two → `[1, 1, 1]`, …); an optional `layout` array overrides the flex weights. Each column should have at most one `#` heading; the first `#` of the first block becomes the slide title, rendered full-width above the columns (and not repeated inside the first column).
 - `# Title` — slide title (first one wins)
 - `## Subtitle` — subtitle line(s), joined with a space
 - `![alt](path)` — block image (first one wins)

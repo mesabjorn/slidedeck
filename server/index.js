@@ -59,27 +59,40 @@ function normalizeLayout(layout) {
 }
 
 function toSections(value) {
-  const all = Array.isArray(value) ? value : [];
-  const isSections =
-    all.length > 0 &&
-    all.every(
-      (entry) => entry && typeof entry === "object" && "slides" in entry,
-    );
-  const sections = isSections ? all : [{ hidden: false, slides: all }];
-  return sections.map((section) => ({
-    name: section.name,
-    hidden: Boolean(section.hidden),
-    entries: (Array.isArray(section.slides) ? section.slides : []).map(
-      (entry) =>
-        typeof entry === "string"
-          ? { file: entry, hidden: false, layout: undefined }
-          : {
-              file: entry?.file,
-              hidden: Boolean(entry?.hidden),
-              layout: normalizeLayout(entry?.layout),
-            },
-    ),
-  }));
+  if (!Array.isArray(value)) {
+    throw new Error("slides/index.json must be an array of sections");
+  }
+  return value.map((section, sectionIndex) => {
+    if (
+      !section ||
+      typeof section !== "object" ||
+      !Array.isArray(section.slides)
+    ) {
+      throw new Error(
+        `slides/index.json section ${sectionIndex + 1} must have a "slides" array`,
+      );
+    }
+    return {
+      name: section.name,
+      hidden: Boolean(section.hidden),
+      entries: section.slides.map((entry, slideIndex) => {
+        if (
+          !entry ||
+          typeof entry !== "object" ||
+          typeof entry.file !== "string"
+        ) {
+          throw new Error(
+            `slides/index.json slide ${slideIndex + 1} in section "${section.name}" must be an object with a "file" field`,
+          );
+        }
+        return {
+          file: entry.file,
+          hidden: Boolean(entry.hidden),
+          layout: normalizeLayout(entry.layout),
+        };
+      }),
+    };
+  });
 }
 
 function visibleSlideEntries(value) {
@@ -220,8 +233,11 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
           "utf8",
         );
 
-        if (entry.layout) {
-          const blocks = parseColumns(text, entry.file);
+        const blocks = parseColumns(text, entry.file); //check if file contains columns
+        if (blocks.length > 1) {
+          const flex =
+            entry.layout?.columns ??
+            Array.from({ length: blocks.length }, () => 1);
           const columns = await Promise.all(
             blocks.map(async (block, blockIndex) => ({
               title: block.title
@@ -239,21 +255,23 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
               charts: block.charts
                 ? await resolveCharts(block.charts, id)
                 : undefined,
-              flex: entry.layout.columns[
-                blockIndex % entry.layout.columns.length
-              ],
+              flex: flex[blockIndex % flex.length],
             })),
           );
+
           parsed.push({
             id: `${entry.file}#layout`,
-            title: columns[0]?.title || entry.file.replace(/\.md$/i, ""),
+            title: columns[0].title, // slide title is inherited from first # element
             items: [],
             section: section.name,
-            columns,
+            columns: columns.map((column, columnIndex) =>
+              columnIndex === 0 ? { ...column, title: "" } : column,
+            ),
           });
           continue;
         }
 
+        // no column config assume basic slide
         const slides = parseSlides(text, entry.file);
         const resolved = await Promise.all(
           slides.map(async (slide) => ({

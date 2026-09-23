@@ -12,8 +12,8 @@ A brand-new SlideDeck presentation for you.
 slides/index.json drives the whole deck.
 
 - Sections carry a name and a slides array
-- Objects with hidden:true are skipped server-side
-- Flat filename arrays still work as a shortcut`,
+- Every slide is an object with a file field
+- Objects with hidden:true are skipped server-side`,
 
   "03-getting-started.md": `# Getting started
 
@@ -23,26 +23,29 @@ Edit the files and refresh to see changes.
 - Add charts from data/*.csv or inline data
 - Run npm run dev to keep serving updates`,
 
-  "04-layouts.md": `# left column
+  "04-layouts.md": `# Multi-col layouts
+
+## left column
 - this
 - shows on the
 - left
 
 ~~~
 
-# right column
+## right column
 - goes
 - on
 - the
 - right`,
 
-  "05-columns.md": `# First column
+  "05-columns.md": `# Column widths
+## First column
 - "~~~" splits a layout file into columns
 - The layout array sets each column's flex width
 
 ~~~
 
-# Second column
+## Second column
 - "---" always starts a new slide
 - Charts work in a column too
 
@@ -50,13 +53,22 @@ Edit the files and refresh to see changes.
 
 ~~~
 
-# Third column
-- Three blocks with [1,1,1] make three equal columns
+## Third column
+- Three blocks with [1,2,1] make the middle one wider
 - Extra "~~~" blocks just fill remaining slots`,
 };
 
 export const STARTER_INDEX = [
-  { name: "Start", slides: ["01-welcome.md", "02-structure.md"] },
-  { name: "Next steps", slides: ["03-getting-started.md"] },
-  { name: "Layouts", slides: [{ file: "04-layouts.md", layout: [1, 1] }, { file: "05-columns.md", layout: [1, 1, 1] }] },
+  {
+    name: "Start",
+    slides: [{ file: "01-welcome.md" }, { file: "02-structure.md" }],
+  },
+  { name: "Next steps", slides: [{ file: "03-getting-started.md" }] },
+  {
+    name: "Layouts",
+    slides: [
+      { file: "04-layouts.md", layout: [1, 1] },
+      { file: "05-columns.md", layout: [1, 2, 1] },
+    ],
+  },
 ];
