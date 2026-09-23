@@ -2,8 +2,15 @@
 
 # Usage:
 
-`npm install`  
-`npm run dev`  
+Install backend dependencies:   
+```bash
+npm install
+cd client
+npm install;
+```
+
+Run from root:  
+`npm run dev`  //runs both server and client concurrently
 
 Open app on localhost:5173
 
