@@ -3,5 +3,10 @@
     "id": "presentation1",
     "title": "SlideDeck — Getting Started",
     "description": "A tour of SlideDeck itself: navigation, features and keyboard shortcuts."
+  },
+  {
+    "id": "test",
+    "title": "test",
+    "description": "A brand-new presentation."
   }
 ]

@@ -11,6 +11,7 @@ import {
   resolveMediaPath,
 } from "./markdown.js";
 import { parseCsv, csvToChartData } from "./csv.js";
+import { compileSlidesExport } from "./export.js";
 
 import { STARTER_SLIDES, STARTER_INDEX } from "./starter_slides.js";
 
@@ -209,6 +210,86 @@ app.get("/api/presentations", async (_req, res) => {
   }
 });
 
+async function buildSlidesResponse(id) {
+  const index = await readJson(
+    path.join(CONTENT_DIR, id, "slides", "index.json"),
+  );
+
+  const sections = toSections(index);
+  const resolve = (src) => resolveMediaPath(src, id);
+
+  const parsed = [];
+  for (const section of sections) {
+    if (section.hidden) continue;
+    for (const entry of section.entries) {
+      if (entry.hidden) continue;
+      const text = await readFile(
+        path.join(CONTENT_DIR, id, "slides", entry.file),
+        "utf8",
+      );
+
+      const blocks = parseColumns(text, entry.file);
+      if (blocks.length > 1) {
+        const flex =
+          entry.layout?.columns ??
+          Array.from({ length: blocks.length }, () => 1);
+        const columns = await Promise.all(
+          blocks.map(async (block, blockIndex) => ({
+            title: block.title
+              ? resolveMediaInText(block.title, resolve)
+              : "",
+            subtitle: block.subtitle
+              ? resolveMediaInText(block.subtitle, resolve)
+              : undefined,
+            items: block.items.map((item) =>
+              resolveMediaInText(item, resolve),
+            ),
+            image: block.image
+              ? { ...block.image, src: resolve(block.image.src) }
+              : undefined,
+            charts: block.charts
+              ? await resolveCharts(block.charts, id)
+              : undefined,
+            flex: flex[blockIndex % flex.length],
+          })),
+        );
+
+        parsed.push({
+          id: `${entry.file}#layout`,
+          title: columns[0].title,
+          items: [],
+          section: section.name,
+          columns: columns.map((column, columnIndex) =>
+            columnIndex === 0 ? { ...column, title: "" } : column,
+          ),
+        });
+        continue;
+      }
+
+      const slides = parseSlides(text, entry.file);
+      const resolved = await Promise.all(
+        slides.map(async (slide) => ({
+          ...slide,
+          title: resolveMediaInText(slide.title, resolve),
+          subtitle: slide.subtitle
+            ? resolveMediaInText(slide.subtitle, resolve)
+            : undefined,
+          items: slide.items.map((item) => resolveMediaInText(item, resolve)),
+          image: slide.image
+            ? { ...slide.image, src: resolve(slide.image.src) }
+            : undefined,
+          charts: slide.charts
+            ? await resolveCharts(slide.charts, id)
+            : undefined,
+          section: section.name,
+        })),
+      );
+      parsed.push(...resolved);
+    }
+  }
+  return { id, slides: parsed };
+}
+
 app.get("/api/presentations/:id/slides", async (req, res) => {
   const { id } = req.params;
   if (!ID_RE.test(id)) {
@@ -216,84 +297,26 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
   }
 
   try {
-    const index = await readJson(
-      path.join(CONTENT_DIR, id, "slides", "index.json"),
-    );
+    res.json(await buildSlidesResponse(id));
+  } catch (err) {
+    const status = err && err.code === "ENOENT" ? 404 : 500;
+    res
+      .status(status)
+      .json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
 
-    const sections = toSections(index);
-    const resolve = (src) => resolveMediaPath(src, id);
+app.get("/api/presentations/:id/export", async (req, res) => {
+  const { id } = req.params;
+  if (!ID_RE.test(id)) {
+    return res.status(400).json({ error: "Invalid presentation id" });
+  }
 
-    const parsed = [];
-    for (const section of sections) {
-      if (section.hidden) continue;
-      for (const entry of section.entries) {
-        if (entry.hidden) continue;
-        const text = await readFile(
-          path.join(CONTENT_DIR, id, "slides", entry.file),
-          "utf8",
-        );
-
-        const blocks = parseColumns(text, entry.file); //check if file contains columns
-        if (blocks.length > 1) {
-          const flex =
-            entry.layout?.columns ??
-            Array.from({ length: blocks.length }, () => 1);
-          const columns = await Promise.all(
-            blocks.map(async (block, blockIndex) => ({
-              title: block.title
-                ? resolveMediaInText(block.title, resolve)
-                : "",
-              subtitle: block.subtitle
-                ? resolveMediaInText(block.subtitle, resolve)
-                : undefined,
-              items: block.items.map((item) =>
-                resolveMediaInText(item, resolve),
-              ),
-              image: block.image
-                ? { ...block.image, src: resolve(block.image.src) }
-                : undefined,
-              charts: block.charts
-                ? await resolveCharts(block.charts, id)
-                : undefined,
-              flex: flex[blockIndex % flex.length],
-            })),
-          );
-
-          parsed.push({
-            id: `${entry.file}#layout`,
-            title: columns[0].title, // slide title is inherited from first # element
-            items: [],
-            section: section.name,
-            columns: columns.map((column, columnIndex) =>
-              columnIndex === 0 ? { ...column, title: "" } : column,
-            ),
-          });
-          continue;
-        }
-
-        // no column config assume basic slide
-        const slides = parseSlides(text, entry.file);
-        const resolved = await Promise.all(
-          slides.map(async (slide) => ({
-            ...slide,
-            title: resolveMediaInText(slide.title, resolve),
-            subtitle: slide.subtitle
-              ? resolveMediaInText(slide.subtitle, resolve)
-              : undefined,
-            items: slide.items.map((item) => resolveMediaInText(item, resolve)),
-            image: slide.image
-              ? { ...slide.image, src: resolve(slide.image.src) }
-              : undefined,
-            charts: slide.charts
-              ? await resolveCharts(slide.charts, id)
-              : undefined,
-            section: section.name,
-          })),
-        );
-        parsed.push(...resolved);
-      }
-    }
-    res.json({ id, slides: parsed });
+  try {
+    const payload = await buildSlidesResponse(id);
+    const exported = await compileSlidesExport(payload, id, CONTENT_DIR);
+    res.set("Cache-Control", "no-store");
+    res.attachment(`${id}-slides.json`).json(exported);
   } catch (err) {
     const status = err && err.code === "ENOENT" ? 404 : 500;
     res

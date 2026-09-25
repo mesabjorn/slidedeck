@@ -3,9 +3,11 @@ import type { ReactNode } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   Expand,
   HelpCircle,
   LayoutGrid,
+  Loader2,
   Presentation,
   Search,
   X,
@@ -17,7 +19,9 @@ import { ThemeSwitcher } from './ThemeSwitcher'
 
 interface SlideDeckProps {
   slides: Slide[]
+  presentationId?: string
   presentationTitle?: string
+  onDownload?: () => void | Promise<void>
   onExit?: () => void
 }
 
@@ -40,10 +44,18 @@ function Kbd({ children }: { children: ReactNode }) {
   )
 }
 
-export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps) {
+export function SlideDeck({
+  slides,
+  presentationId,
+  presentationTitle,
+  onDownload,
+  onExit,
+}: SlideDeckProps) {
   const total = slides.length
   const [index, setIndex] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
   const [showOverview, setShowOverview] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [query, setQuery] = useState('')
@@ -71,6 +83,39 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
       // Fullscreen API unavailable
     }
   }, [])
+
+  const downloadSlides = useCallback(async (): Promise<void> => {
+    if (isDownloading || (!onDownload && !presentationId)) return
+    setIsDownloading(true)
+    setDownloadError(null)
+    try {
+      if (onDownload) {
+        await onDownload()
+        return
+      }
+      if (!presentationId) return
+
+      const response = await fetch(
+        `/api/presentations/${encodeURIComponent(presentationId)}/export`,
+      )
+      if (!response.ok) {
+        throw new Error(`Failed to download slides (${response.status})`)
+      }
+      const blob = await response.blob()
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = `${presentationId}-slides.json`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : 'Unable to download slides')
+    } finally {
+      setIsDownloading(false)
+    }
+  }, [isDownloading, onDownload, presentationId])
 
   const resetOverview = useCallback(() => {
     setShowOverview(false)
@@ -268,6 +313,21 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
 
         {!isFullscreen && (
           <div className="ml-auto flex gap-2">
+            <button
+              type="button"
+              onClick={() => void downloadSlides()}
+              disabled={isDownloading}
+              title={downloadError ?? 'Download slides JSON'}
+              aria-label={downloadError ?? 'Download slides JSON'}
+              aria-busy={isDownloading}
+              className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isDownloading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Download className="h-5 w-5" />
+              )}
+            </button>
             <ThemeSwitcher />
             <button
               type="button"

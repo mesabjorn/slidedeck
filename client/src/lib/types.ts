@@ -44,3 +44,9 @@ export interface PresentationMeta {
   description?: string
   slideCount?: number
 }
+
+export interface ImportedPresentation {
+  id: string
+  title: string
+  slides: Slide[]
+}

@@ -1,15 +1,25 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
-import { ArrowRight, FileWarning, Layers, Loader2, Plus, Presentation, X } from 'lucide-react'
-import type { PresentationMeta } from '../lib/types'
-import { ThemeSwitcher } from './ThemeSwitcher'
+import { useRef, useState } from "react";
+import type { ChangeEvent, SubmitEvent } from "react";
+import {
+  ArrowRight,
+  FileWarning,
+  Layers,
+  Loader2,
+  Plus,
+  Presentation,
+  Upload,
+  X,
+} from "lucide-react";
+import type { PresentationMeta } from "../lib/types";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 interface PresentationPickerProps {
-  presentations: PresentationMeta[]
-  loading: boolean
-  error: string | null
-  onSelect: (id: string) => void
-  onCreate: (title: string) => Promise<PresentationMeta>
+  presentations: PresentationMeta[];
+  loading: boolean;
+  error: string | null;
+  onSelect: (id: string) => void;
+  onCreate: (title: string) => Promise<PresentationMeta>;
+  onImport: (file: File) => Promise<void>;
 }
 
 export function PresentationPicker({
@@ -18,34 +28,59 @@ export function PresentationPicker({
   error,
   onSelect,
   onCreate,
+  onImport,
 }: PresentationPickerProps) {
-  const [showCreate, setShowCreate] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [creating, setCreating] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
-  async function handleCreate(event: FormEvent): Promise<void> {
-    event.preventDefault()
-    const title = newTitle.trim()
-    if (!title || creating) return
-    setCreating(true)
-    setCreateError(null)
+  async function handleCreate(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    const title = newTitle.trim();
+    if (!title || creating) return;
+    setCreating(true);
+    setCreateError(null);
     try {
-      const meta = await onCreate(title)
-      setShowCreate(false)
-      setNewTitle('')
-      onSelect(meta.id)
+      const meta = await onCreate(title);
+      setShowCreate(false);
+      setNewTitle("");
+      onSelect(meta.id);
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Could not create presentation')
-      setCreating(false)
+      setCreateError(
+        err instanceof Error ? err.message : "Could not create presentation",
+      );
+      setCreating(false);
+    }
+  }
+
+  async function handleImport(
+    event: ChangeEvent<HTMLInputElement>,
+  ): Promise<void> {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || importing) return;
+    setImporting(true);
+    setImportError(null);
+    try {
+      await onImport(file);
+    } catch (err) {
+      setImportError(
+        err instanceof Error ? err.message : "Could not import presentation",
+      );
+    } finally {
+      setImporting(false);
     }
   }
 
   function closeCreate(): void {
-    if (creating) return
-    setShowCreate(false)
-    setNewTitle('')
-    setCreateError(null)
+    if (creating) return;
+    setShowCreate(false);
+    setNewTitle("");
+    setCreateError(null);
   }
 
   const createModal = (
@@ -54,7 +89,9 @@ export function PresentationPicker({
         <div className="fixed inset-0 z-30 grid place-items-center bg-overlay/80 p-6 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-border/10 bg-panel p-8 shadow-2xl">
             <div className="flex items-start justify-between">
-              <h2 className="text-2xl font-semibold text-heading">New presentation</h2>
+              <h2 className="text-2xl font-semibold text-heading">
+                New presentation
+              </h2>
               <button
                 type="button"
                 onClick={closeCreate}
@@ -65,10 +102,13 @@ export function PresentationPicker({
               </button>
             </div>
             <p className="mt-1 text-sm text-muted">
-              Creates a folder with starter slides and a sections index.json under
-              server/content/.
+              Creates a folder with starter slides and a sections index.json
+              under server/content/.
             </p>
-            <form onSubmit={(event) => void handleCreate(event)} className="mt-6 space-y-4">
+            <form
+              onSubmit={(event) => void handleCreate(event)}
+              className="mt-6 space-y-4"
+            >
               <label className="block">
                 <span className="mb-1.5 block text-sm text-muted">Title</span>
                 <input
@@ -80,7 +120,9 @@ export function PresentationPicker({
                   className="w-full rounded-lg border border-border/10 bg-surface/10 px-3 py-2 text-sm text-ink outline-none transition placeholder:text-faint focus:border-accent/60"
                 />
               </label>
-              {createError && <p className="text-sm text-amber-400">{createError}</p>}
+              {createError && (
+                <p className="text-sm text-amber-400">{createError}</p>
+              )}
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
@@ -104,7 +146,33 @@ export function PresentationPicker({
         </div>
       )}
     </>
-  )
+  );
+
+  const importControl = (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        onChange={(event) => void handleImport(event)}
+        className="hidden"
+        aria-label="Import presentation JSON"
+      />
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={importing}
+        className="flex items-center gap-2 rounded-full bg-surface/10 px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface/20 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {importing ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Upload className="h-4 w-4" />
+        )}
+        {importing ? "Importing…" : "Import JSON"}
+      </button>
+    </>
+  );
 
   if (loading) {
     return (
@@ -114,7 +182,7 @@ export function PresentationPicker({
           <p className="text-sm">Loading presentations…</p>
         </div>
       </main>
-    )
+    );
   }
 
   if (error) {
@@ -122,16 +190,20 @@ export function PresentationPicker({
       <main className="grid h-full place-items-center bg-bg px-6">
         <div className="flex max-w-lg flex-col items-center gap-4 text-center">
           <FileWarning className="h-10 w-10 text-amber-400" />
-          <h1 className="text-2xl font-semibold text-heading">Could not load presentations</h1>
+          <h1 className="text-2xl font-semibold text-heading">
+            Could not load presentations
+          </h1>
           <p className="text-sm text-muted">{error}</p>
           <p className="text-xs text-faint">
-            Make sure the backend is running and{' '}
-            <code className="rounded bg-surface/10 px-1 py-0.5 font-mono">server/content/presentations.json</code>{' '}
+            Make sure the backend is running and{" "}
+            <code className="rounded bg-surface/10 px-1 py-0.5 font-mono">
+              server/content/presentations.json
+            </code>{" "}
             exists and points at valid presentation folders.
           </p>
         </div>
       </main>
-    )
+    );
   }
 
   if (presentations.length === 0) {
@@ -139,30 +211,46 @@ export function PresentationPicker({
       <main className="grid h-full place-items-center bg-bg px-6">
         <div className="flex max-w-lg flex-col items-center gap-4 text-center">
           <Layers className="h-10 w-10 text-amber-400" />
-          <h1 className="text-2xl font-semibold text-heading">No presentations found</h1>
+          <h1 className="text-2xl font-semibold text-heading">
+            No presentations found
+          </h1>
           <p className="text-sm text-muted">
-            Create one to get started, or add a folder like{' '}
-            <code className="rounded bg-surface/10 px-1 py-0.5 font-mono">server/content/presentation1</code>{' '}
-            and list it in{' '}
-            <code className="rounded bg-surface/10 px-1 py-0.5 font-mono">server/content/presentations.json</code>.
+            Create one to get started, or add a folder like{" "}
+            <code className="rounded bg-surface/10 px-1 py-0.5 font-mono">
+              server/content/presentation1
+            </code>{" "}
+            and list it in{" "}
+            <code className="rounded bg-surface/10 px-1 py-0.5 font-mono">
+              server/content/presentations.json
+            </code>
+            .
           </p>
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="mt-2 flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-bg transition hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Create your first presentation
-          </button>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-bg transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              Create your first presentation
+            </button>
+            {importControl}
+          </div>
+          {importError && (
+            <p role="alert" className="text-sm text-amber-400">
+              {importError}
+            </p>
+          )}
         </div>
         {createModal}
       </main>
-    )
+    );
   }
 
   return (
     <main className="relative min-h-full overflow-y-auto bg-bg px-6 py-16">
-      <div className="absolute top-6 right-6">
+      <div className="absolute top-6 right-6 flex items-center gap-3">
+        {importControl}
         <ThemeSwitcher />
       </div>
       <div className="mx-auto w-full max-w-4xl">
@@ -171,6 +259,12 @@ export function PresentationPicker({
           <h1 className="mt-4 text-4xl font-bold text-heading">SlideDeck</h1>
           <p className="mt-2 text-muted">Choose a presentation to start</p>
         </header>
+
+        {importError && (
+          <p role="alert" className="mb-6 text-center text-sm text-amber-400">
+            {importError}
+          </p>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           {presentations.map((presentation) => (
@@ -189,7 +283,9 @@ export function PresentationPicker({
                 )}
               </div>
 
-              <h2 className="mt-4 text-xl font-semibold text-heading">{presentation.title}</h2>
+              <h2 className="mt-4 text-xl font-semibold text-heading">
+                {presentation.title}
+              </h2>
               {presentation.description && (
                 <p className="mt-2 text-sm leading-relaxed text-muted">
                   {presentation.description}
@@ -215,5 +311,5 @@ export function PresentationPicker({
       </div>
       {createModal}
     </main>
-  )
+  );
 }
