@@ -2,31 +2,60 @@
   {
     "name": "Start",
     "slides": [
-      "01-intro.md",
-      "02-features.md"
+      {
+        "file": "01-intro.md"
+      },
+      {
+        "file": "02-features.md"
+      }
     ]
   },
   {
     "name": "Navigation",
     "slides": [
-      "03-usage.md"
+      {
+        "file": "03-usage.md"
+      }
     ]
   },
   {
     "name": "Charts",
     "slides": [
-      "05-charts.md",
+      {
+        "file": "05-charts.md"
+      },
       {
         "file": "05-charts-line.md",
         "hidden": true
       },
-      "05-charts-pie.md"
+      {
+        "file": "05-charts-pie.md"
+      }
+    ]
+  },
+  {
+    "name": "Multi-column",
+    "slides": [
+      {
+        "file": "06-multi-column.md"
+      }
+    ]
+  },
+  {
+    "name": "Or more space in the middle",
+    "slides": [
+      {
+        "file": "07-multi-column-wide.md",
+        "layout": [1, 2, 1]
+      }
     ]
   },
   {
     "name": "Wrap up",
     "slides": [
-      "04-outro.md"
+      {
+        "file": "04-outro.md"
+      }
     ]
   }
 ]

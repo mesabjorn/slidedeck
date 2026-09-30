@@ -1,16 +1,24 @@
-import type { Chart, Slide, SlideColumn, SlideImage } from '../lib/types'
-import { ChartView } from './ChartView'
-import { InlineText } from './InlineText'
+import type { Chart, Slide, SlideColumn, SlideImage } from "../lib/types";
+import { ChartView } from "./ChartView";
+import { InlineText } from "./InlineText";
 
 interface SlideContentProps {
-  title: string
-  subtitle?: string
-  items: string[]
-  image?: SlideImage
-  charts?: Chart[]
+  title: string;
+  subtitle?: string;
+  items: string[];
+  image?: SlideImage;
+  charts?: Chart[];
+  compact?: boolean;
 }
 
-function SlideContent({ title, subtitle, items, image, charts }: SlideContentProps) {
+function SlideContent({
+  title,
+  subtitle,
+  items,
+  image,
+  charts,
+  compact = false,
+}: SlideContentProps) {
   return (
     <>
       {subtitle && (
@@ -19,10 +27,16 @@ function SlideContent({ title, subtitle, items, image, charts }: SlideContentPro
         </p>
       )}
 
-      <h1 className="mt-6 text-5xl font-bold leading-tight tracking-tight text-heading sm:text-7xl">
-        <InlineText text={title} />
-      </h1>
-
+      {title &&
+        (compact ? (
+          <h2 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-heading">
+            <InlineText text={title} />
+          </h2>
+        ) : (
+          <h1 className="mt-6 text-5xl font-bold leading-tight tracking-tight text-heading sm:text-7xl">
+            <InlineText text={title} />
+          </h1>
+        ))}
       {image && (
         <img
           src={image.src}
@@ -31,20 +45,15 @@ function SlideContent({ title, subtitle, items, image, charts }: SlideContentPro
           className="mx-auto mt-10 max-h-[36vh] max-w-full rounded-2xl border border-border/10 object-contain shadow-2xl"
         />
       )}
-
       {charts && charts.length > 0 && (
         <div className="mx-auto mt-10 grid w-full max-w-4xl grid-cols-1 gap-6 lg:grid-cols-2">
           {charts.map((chart, i) => (
-            <div
-              key={i}
-              className={charts.length === 1 ? 'lg:col-span-2' : ''}
-            >
+            <div key={i} className={charts.length === 1 ? "lg:col-span-2" : ""}>
               <ChartView chart={chart} />
             </div>
           ))}
         </div>
       )}
-
       {items.length > 0 && (
         <ul className="mx-auto mt-12 max-w-3xl space-y-5 text-left">
           {items.map((item, i) => (
@@ -61,38 +70,44 @@ function SlideContent({ title, subtitle, items, image, charts }: SlideContentPro
         </ul>
       )}
     </>
-  )
+  );
 }
 
 function SlideColumnView({ column }: { column: SlideColumn }) {
   return (
-    <div className="rounded-2xl border border-border/10 bg-surface/5 p-8 text-center shadow-2xl">
+    <div className="flex h-full flex-col rounded-2xl border border-border/10 bg-surface/5 p-8 text-center shadow-2xl">
       <SlideContent
         title={column.title}
         subtitle={column.subtitle}
         items={column.items}
         image={column.image}
         charts={column.charts}
+        compact
       />
     </div>
-  )
+  );
 }
 
 export function SlideView({ slide }: { slide: Slide }) {
   if (slide.columns && slide.columns.length > 0) {
     return (
-      <div className="flex w-full max-w-6xl flex-wrap items-stretch justify-center gap-6">
-        {slide.columns.map((column, i) => (
-          <div
-            key={i}
-            style={{ flex: `${column.flex} 1 0%` }}
-            className="min-w-72 flex-1"
-          >
-            <SlideColumnView column={column} />
-          </div>
-        ))}
+      <div className="flex w-full max-w-6xl flex-col items-center gap-10">
+        <h1 className="mt-2 text-5xl font-bold leading-tight tracking-tight text-heading sm:text-7xl">
+          <InlineText text={slide.title} />
+        </h1>
+        <div className="flex w-full flex-wrap items-stretch justify-center gap-6">
+          {slide.columns.map((column, i) => (
+            <div
+              key={i}
+              style={{ flex: `${column.flex} 1 0%` }}
+              className="min-w-72 flex-1"
+            >
+              <SlideColumnView column={column} />
+            </div>
+          ))}
+        </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -105,5 +120,5 @@ export function SlideView({ slide }: { slide: Slide }) {
         charts={slide.charts}
       />
     </div>
-  )
+  );
 }
