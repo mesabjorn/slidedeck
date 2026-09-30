@@ -228,27 +228,63 @@ async function buildSlidesResponse(id) {
         "utf8",
       );
 
-      const blocks = parseColumns(text, entry.file);
-      if (blocks.length > 1) {
-        const flex =
-          entry.layout?.columns ??
-          Array.from({ length: blocks.length }, () => 1);
-        const columns = await Promise.all(
-          blocks.map(async (block, blockIndex) => ({
-            title: block.title
-              ? resolveMediaInText(block.title, resolve)
-              : "",
-            subtitle: block.subtitle
-              ? resolveMediaInText(block.subtitle, resolve)
+        if (entry.layout) {
+          const blocks = parseColumns(text, entry.file);
+          const columns = await Promise.all(
+            blocks.map(async (block, blockIndex) => ({
+              title: block.title
+                ? resolveMediaInText(block.title, resolve)
+                : "",
+              subtitle: block.subtitle
+                ? resolveMediaInText(block.subtitle, resolve)
+                : undefined,
+              items: block.items.map((item) =>
+                resolveMediaInText(item, resolve),
+              ),
+              image: block.image
+                ? { ...block.image, src: resolve(block.image.src) }
+                : undefined,
+              charts: block.charts
+                ? await resolveCharts(block.charts, id)
+                : undefined,
+              references: block.references
+                ? block.references.map((text) =>
+                    resolveMediaInText(text, resolve),
+                  )
+                : undefined,
+              flex: entry.layout.columns[
+                blockIndex % entry.layout.columns.length
+              ],
+            })),
+          );
+          const references = columns.flatMap(
+            (column) => column.references ?? [],
+          );
+          parsed.push({
+            id: `${entry.file}#layout`,
+            title: columns[0]?.title || entry.file.replace(/\.md$/i, ""),
+            items: [],
+            section: section.name,
+            columns,
+            references: references.length > 0 ? references : undefined,
+          });
+          continue;
+        }
+
+        const slides = parseSlides(text, entry.file);
+        const resolved = await Promise.all(
+          slides.map(async (slide) => ({
+            ...slide,
+            title: resolveMediaInText(slide.title, resolve),
+            subtitle: slide.subtitle
+              ? resolveMediaInText(slide.subtitle, resolve)
               : undefined,
-            items: block.items.map((item) =>
-              resolveMediaInText(item, resolve),
-            ),
-            image: block.image
-              ? { ...block.image, src: resolve(block.image.src) }
+            items: slide.items.map((item) => resolveMediaInText(item, resolve)),
+            image: slide.image
+              ? { ...slide.image, src: resolve(slide.image.src) }
               : undefined,
-            charts: block.charts
-              ? await resolveCharts(block.charts, id)
+            charts: slide.charts
+              ? await resolveCharts(slide.charts, id)
               : undefined,
             references: block.references?.map((reference) =>
               resolveMediaInText(reference, resolve),
@@ -256,17 +292,7 @@ async function buildSlidesResponse(id) {
             flex: flex[blockIndex % flex.length],
           })),
         );
-
-        parsed.push({
-          id: `${entry.file}#layout`,
-          title: columns[0].title,
-          items: [],
-          section: section.name,
-          columns: columns.map((column, columnIndex) =>
-            columnIndex === 0 ? { ...column, title: "" } : column,
-          ),
-        });
-        continue;
+        parsed.push(...resolved);
       }
 
       const slides = parseSlides(text, entry.file);
@@ -292,37 +318,7 @@ async function buildSlidesResponse(id) {
       );
       parsed.push(...resolved);
     }
-  }
-  return { id, slides: parsed };
-}
-
-app.get("/api/presentations/:id/slides", async (req, res) => {
-  const { id } = req.params;
-  if (!ID_RE.test(id)) {
-    return res.status(400).json({ error: "Invalid presentation id" });
-  }
-
-  try {
-    res.json(await buildSlidesResponse(id));
-  } catch (err) {
-    const status = err && err.code === "ENOENT" ? 404 : 500;
-    res
-      .status(status)
-      .json({ error: err instanceof Error ? err.message : "Unknown error" });
-  }
-});
-
-app.get("/api/presentations/:id/export", async (req, res) => {
-  const { id } = req.params;
-  if (!ID_RE.test(id)) {
-    return res.status(400).json({ error: "Invalid presentation id" });
-  }
-
-  try {
-    const payload = await buildSlidesResponse(id);
-    const exported = await compileSlidesExport(payload, id, CONTENT_DIR);
-    res.set("Cache-Control", "no-store");
-    res.attachment(`${id}-slides.json`).json(exported);
+    res.json({ id, slides: parsed });
   } catch (err) {
     const status = err && err.code === "ENOENT" ? 404 : 500;
     res

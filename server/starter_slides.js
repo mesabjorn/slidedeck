@@ -23,8 +23,11 @@ slides/index.json drives the whole deck.
 Edit the files and refresh to see changes.
 
 - Replace this slide with your own content
-- Add charts from data/*.csv or inline data
-- Run npm run dev to keep serving updates`,
+- Add charts from data/*.csv or inline data (1)
+- Add a reference with a ">" line — hover the icon on the slide
+- Run npm run dev to keep serving updates
+
+> 1. Author A, Author B (2024). Title of the paper. Journal 12(3):45-67. https://doi.org/10.0000/xxxxx`,
 
   "04-layouts.md": `# Multi-col layouts
 

@@ -6,6 +6,7 @@ const IMAGE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
 const CHART_RE = /^chart:(\w+)$/;
 const BULLET_RE = /^[-*+]\s+(.*)$/;
 const NUMBERED_RE = /^\d+[.)]\s+(.*)$/;
+const REFERENCE_RE = /^>\s?(.*)$/;
 const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 const REFERENCE_RE = /^>\s*(.*)$/;
 
@@ -65,6 +66,7 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
   let title = "";
   const subtitleLines = [];
   const items = [];
+  const references = [];
   const charts = [];
   const references = [];
   let image;
