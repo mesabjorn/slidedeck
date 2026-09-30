@@ -7,7 +7,7 @@ import type {
 } from "../lib/types";
 import { getIcon } from "../lib/icons";
 import type { LucideIcon } from "lucide-react";
-import { ChartView } from "./ChartView";
+import { ChartView, COLORS } from "./ChartView";
 import { InlineText } from "./InlineText";
 
 interface SlideContentProps {
@@ -63,10 +63,7 @@ function ChartGrid({
       className={`mx-auto mt-10 grid w-full grid-cols-1 gap-6 lg:grid-cols-2 ${className}`}
     >
       {charts.map((chart, i) => (
-        <div
-          key={i}
-          className={charts.length === 1 ? "lg:col-span-2" : ""}
-        >
+        <div key={i} className={charts.length === 1 ? "lg:col-span-2" : ""}>
           <ChartView chart={chart} />
         </div>
       ))}
@@ -82,7 +79,10 @@ function ItemList({ items }: { items: string[] }) {
           key={i}
           className="flex items-center gap-4 text-xl leading-snug text-ink sm:text-2xl"
         >
-          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
+          <span
+            className={`h-2.5 w-2.5 shrink-0 rounded-full`}
+            style={{ backgroundColor: COLORS[i % COLORS.length] }}
+          />
           <span>
             <InlineText text={item} />
           </span>
@@ -96,7 +96,10 @@ function RevealStepView({ step }: { step: SlideRevealStep }) {
   return (
     <div className="animate-slide-in">
       {step.image && (
-        <SlideImageView image={step.image} className="mx-auto mt-10 max-h-[55vh]" />
+        <SlideImageView
+          image={step.image}
+          className="mx-auto mt-10 max-h-[55vh]"
+        />
       )}
       {step.charts && step.charts.length > 0 && (
         <ChartGrid charts={step.charts} className="max-w-3xl" />
@@ -162,7 +165,9 @@ function RevealSteps({
   if (isImageOnlyReveal(reveal)) {
     return (
       <div className="animate-slide-in">
-        <RevealOverlay images={shown.flatMap((step) => (step.image ? [step.image] : []))} />
+        <RevealOverlay
+          images={shown.flatMap((step) => (step.image ? [step.image] : []))}
+        />
       </div>
     );
   }

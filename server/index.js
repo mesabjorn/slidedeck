@@ -249,15 +249,11 @@ async function buildSlidesResponse(id) {
           Array.from({ length: blocks.length }, () => 1);
         const columns = await Promise.all(
           blocks.map(async (block, blockIndex) => ({
-            title: block.title
-              ? resolveMediaInText(block.title, resolve)
-              : "",
+            title: block.title ? resolveMediaInText(block.title, resolve) : "",
             subtitle: block.subtitle
               ? resolveMediaInText(block.subtitle, resolve)
               : undefined,
-            items: block.items.map((item) =>
-              resolveMediaInText(item, resolve),
-            ),
+            items: block.items.map((item) => resolveMediaInText(item, resolve)),
             image: block.image
               ? { ...block.image, src: resolve(block.image.src) }
               : undefined,

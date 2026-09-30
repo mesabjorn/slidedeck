@@ -121,7 +121,9 @@ export function SlideDeck({
   const advanceOnClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
       const target = event.target as HTMLElement;
-      if (target.closest("a, button, input, textarea, select, [role='button']")) {
+      if (
+        target.closest("a, button, input, textarea, select, [role='button']")
+      ) {
         return;
       }
       next();
@@ -217,11 +219,12 @@ export function SlideDeck({
         }
         return;
       }
-
+      console.log(event.key);
       switch (event.key) {
         case "ArrowRight":
         case "ArrowDown":
         case "PageDown":
+        case "d":
         case " ":
         case "Enter":
           event.preventDefault();
@@ -230,6 +233,7 @@ export function SlideDeck({
           break;
         case "ArrowLeft":
         case "ArrowUp":
+        case "a":
         case "PageUp":
           event.preventDefault();
           resetOverlays();
@@ -348,7 +352,6 @@ export function SlideDeck({
       )}
     </button>
   );
-
   return (
     <div className="relative h-full overflow-hidden bg-bg text-ink">
       <div
@@ -390,11 +393,11 @@ export function SlideDeck({
         <span
           className={`font-mono text-sm ${
             isFullscreen
-              ? "text-faint/70"
+              ? "text-faint/30"
               : "rounded-full bg-surface/10 px-3 py-1 text-ink"
           }`}
         >
-          {index + 1} / {total}
+          {`${slides[index].section ?? "Untitled"} : ${index + 1} / ${total}`}
         </span>
 
         {!isFullscreen && (

@@ -5,11 +5,8 @@
     "description": "A tour of SlideDeck itself: navigation, features and keyboard shortcuts."
   },
   {
-    "id": "rpa"
-  },
-  {
-    "id": "test",
-    "title": "test",
-    "description": "A brand-new presentation."
+    "id": "rpa",
+    "title": "RPA-AI",
+    "description": "Bjorn's presentation for RPA event"
   }
 ]

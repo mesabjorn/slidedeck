@@ -3,10 +3,10 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { Chart, ChartSeries } from "../lib/types";
 import { TooltipBubble } from "./Tooltip";
 
-const COLORS = [
+export const COLORS = [
   "var(--color-accent)",
-  "var(--color-accent-strong)",
   "var(--color-muted)",
+  "var(--color-accent-strong)",
   "var(--color-heading)",
 ];
 
@@ -27,6 +27,7 @@ interface Hover {
 }
 
 function niceMax(max: number): number {
+  //returns the next "nice" number above max
   const magnitude = 10 ** Math.floor(Math.log10(Math.max(max, 1)));
   const normalized = Math.max(max, 1) / magnitude;
   const step =
