@@ -25,6 +25,7 @@ export interface SlideColumn {
   image?: SlideImage
   charts?: Chart[]
   references?: string[]
+  icon?: string
   flex: number
 }
 
@@ -36,6 +37,7 @@ export interface Slide {
   image?: SlideImage
   charts?: Chart[]
   references?: string[]
+  icon?: string
   section?: string
   columns?: SlideColumn[]
 }

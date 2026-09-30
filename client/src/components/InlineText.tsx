@@ -1,4 +1,6 @@
 import { Fragment } from 'react'
+import { getIcon, ICON_NAMES } from '../lib/icons'
+import type { LucideIcon } from 'lucide-react'
 import { InlineTooltip } from './Tooltip'
 
 type Token =
@@ -8,8 +10,13 @@ type Token =
   | { type: 'code'; text: string }
   | { type: 'link'; text: string; href: string }
   | { type: 'image'; alt: string; src: string }
+  | { type: 'icon'; name: string }
 
-const TOKEN_RE = /(\*\*[^*]+\*\*|`[^`]+`|!\[[^\]]*\]\([^)\s]+\)|\[[^\]]+\]\([^)]+\)|\*[^*]+\*)/g
+const ICON_RE = /^:([a-z][a-z0-9]*(?:-[a-z0-9]+)*):$/
+const ICON_NAME_SET: ReadonlySet<string> = new Set(ICON_NAMES)
+
+const TOKEN_RE =
+  /(\*\*[^*]+\*\*|`[^`]+`|!\[[^\]]*\]\([^)\s]+\)|\[[^\]]+\]\([^)]+\)|\*[^*]+\*|:[a-z][a-z0-9]*(?:-[a-z0-9]+)*:)/g
 
 function tokenize(text: string): Token[] {
   return text
@@ -29,6 +36,12 @@ function tokenize(text: string): Token[] {
       const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
       if (link) {
         return { type: 'link', text: link[1], href: link[2] }
+      }
+      // An unknown `:name:` is left as literal text so typos stay visible
+      // instead of silently swallowing content.
+      const icon = ICON_RE.exec(part)
+      if (icon && ICON_NAME_SET.has(icon[1])) {
+        return { type: 'icon', name: icon[1] }
       }
       if (part.startsWith('*') && part.endsWith('*')) {
         return { type: 'italic', text: part.slice(1, -1) }
@@ -95,6 +108,18 @@ export function InlineText({ text }: { text: string }) {
                 loading="lazy"
               />
             )
+          case 'icon': {
+            const Glyph = getIcon(token.name) as LucideIcon | undefined
+            return Glyph ? (
+              <Glyph
+                key={i}
+                aria-hidden="true"
+                className="inline-block h-[1.15em] w-[1.15em] align-[-0.18em] text-accent"
+              />
+            ) : (
+              <Fragment key={i}>{`:${token.name}:`}</Fragment>
+            )
+          }
           default:
             return <Fragment key={i}>{token.text}</Fragment>
         }

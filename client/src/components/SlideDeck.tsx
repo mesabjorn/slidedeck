@@ -385,23 +385,27 @@ export function SlideDeck({
         )}
       </header>
 
-      <button
-        type="button"
-        onClick={() => setShowReferences((current) => !current)}
-        disabled={!hasReferences}
-        title={hasReferences ? "References (R)" : "No references on this slide"}
-        aria-label="Toggle references"
-        aria-expanded={hasReferences ? showReferences : undefined}
-        className={`absolute right-5 bottom-20 ml-3 rounded-full bg-surface/10 p-2.5 transition hover:bg-surface/20 disabled:cursor-not-allowed disabled:opacity-40 ${
-          hasReferences
-            ? showReferences
-              ? "bg-accent/20 text-accent"
-              : "text-muted hover:text-heading"
-            : "text-muted"
-        }`}
-      >
-        <BookBookmark className={`h-5 w-5`} />
-      </button>
+      {hasReferences && (
+        <button
+          type="button"
+          onClick={() => setShowReferences((current) => !current)}
+          disabled={!hasReferences}
+          title={
+            hasReferences ? "References (R)" : "No references on this slide"
+          }
+          aria-label="Toggle references"
+          aria-expanded={hasReferences ? showReferences : undefined}
+          className={`absolute right-5 bottom-20 ml-3 rounded-full bg-surface/10 p-2.5 transition hover:bg-surface/20 disabled:cursor-not-allowed disabled:opacity-40 ${
+            hasReferences
+              ? showReferences
+                ? "bg-accent/20 text-accent"
+                : "text-muted hover:text-heading"
+              : "text-muted"
+          }`}
+        >
+          <BookBookmark className={`h-5 w-5`} />
+        </button>
+      )}
 
       <footer className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-4 px-5 py-4">
         <button

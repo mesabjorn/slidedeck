@@ -253,6 +253,7 @@ async function buildSlidesResponse(id) {
             references: block.references?.map((reference) =>
               resolveMediaInText(reference, resolve),
             ),
+            icon: block.icon,
             flex: flex[blockIndex % flex.length],
           })),
         );

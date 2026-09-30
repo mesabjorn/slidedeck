@@ -1,4 +1,6 @@
 import type { Chart, Slide, SlideColumn, SlideImage } from "../lib/types";
+import { getIcon } from "../lib/icons";
+import type { LucideIcon } from "lucide-react";
 import { ChartView } from "./ChartView";
 import { InlineText } from "./InlineText";
 
@@ -8,7 +10,20 @@ interface SlideContentProps {
   items: string[];
   image?: SlideImage;
   charts?: Chart[];
+  icon?: string;
   compact?: boolean;
+}
+
+function DecorativeIcon({ name }: { name?: string }) {
+  if (!name) return null;
+  const Glyph = getIcon(name) as LucideIcon | undefined;
+  if (!Glyph) return null;
+  return (
+    <Glyph
+      aria-hidden="true"
+      className="mx-auto mb-8 h-20 w-20 text-accent opacity-90 sm:h-24 sm:w-24"
+    />
+  );
 }
 
 function SlideContent({
@@ -17,10 +32,13 @@ function SlideContent({
   items,
   image,
   charts,
+  icon,
   compact = false,
 }: SlideContentProps) {
   return (
     <>
+      <DecorativeIcon name={icon} />
+
       {subtitle && (
         <p className="text-sm font-medium uppercase tracking-[0.35em] text-accent">
           <InlineText text={subtitle} />
@@ -82,6 +100,7 @@ function SlideColumnView({ column }: { column: SlideColumn }) {
         items={column.items}
         image={column.image}
         charts={column.charts}
+        icon={column.icon}
         compact
       />
     </div>
@@ -118,6 +137,7 @@ export function SlideView({ slide }: { slide: Slide }) {
         items={slide.items}
         image={slide.image}
         charts={slide.charts}
+        icon={slide.icon}
       />
     </div>
   );

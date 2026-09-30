@@ -75,6 +75,7 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
         { "type": "bar", "data": { "labels": ["Q1"], "series": [{ "name": "Sales", "values": [120] }] } }
       ],
       "references": ["Author A, Author B (2024). Title."],
+      "icon": "rocket",
       "section": "Start"
     },
     {
@@ -83,7 +84,7 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
       "items": [],
       "section": "Layouts",
       "columns": [
-        { "title": "", "subtitle": "…", "items": ["…"], "image": { }, "charts": [], "references": [], "flex": 1 }
+        { "title": "", "subtitle": "…", "items": ["…"], "image": { }, "charts": [], "references": [], "icon": "zap", "flex": 1 }
       ]
     }
   ]
@@ -106,15 +107,16 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
 - `client/src/main.tsx` — entry point; calls `applyStoredTheme()` before the first render
 - `client/src/App.tsx` — top-level state: picker vs. deck, imported-deck state, JSON import validation (`importPresentation`), imported-deck re-export
 - `client/src/index.css` — Tailwind v4 `@theme` semantic tokens, palette overrides, `slide-in` animation
-- `client/src/lib/types.ts` — shared types: `Slide`, `SlideColumn`, `SlideImage`, `Chart`, `ChartData`, `PresentationMeta`, `ImportedPresentation` (`references?: string[]` on both `Slide` and `SlideColumn`)
+- `client/src/lib/types.ts` — shared types: `Slide`, `SlideColumn`, `SlideImage`, `Chart`, `ChartData`, `PresentationMeta`, `ImportedPresentation` (`references?: string[]` and `icon?: string` on both `Slide` and `SlideColumn`)
 - `client/src/lib/themes.ts` — `Theme`, `THEMES` (the palette list), `ThemeId`
+- `client/src/lib/icons.ts` — `ICON_MAP` (curated lucide allow-list), `IconName`, `getIcon()`
 - `client/src/hooks/usePresentations.ts` — loads the deck list; also `createPresentation(title)` → `POST /api/presentations`
 - `client/src/hooks/useSlides.ts` — loads parsed slides for a deck id, discarding stale responses
 - `client/src/hooks/useTheme.ts` — `useTheme()` + `applyStoredTheme()` (localStorage key `slidedeck-theme`)
 - `client/src/components/PresentationPicker.tsx` — deck chooser, "New presentation" modal, "Import JSON" file input
 - `client/src/components/SlideDeck.tsx` — navigation, keyboard shortcuts, fullscreen, overview grid + search, help modal, references panel, JSON download
-- `client/src/components/SlideView.tsx` — renders one slide, dispatching to the multi-column layout or single-column body
-- `client/src/components/InlineText.tsx` — renders inline markdown (bold, italic, code, links, tooltips, inline images)
+- `client/src/components/SlideView.tsx` — renders one slide, dispatching to the multi-column layout or single-column body; also draws the standalone decorative icon
+- `client/src/components/InlineText.tsx` — renders inline markdown (bold, italic, code, links, tooltips, inline images, `:name:` icons)
 - `client/src/components/ChartView.tsx` — hand-rolled SVG bar/line/pie charts with hover tooltips (pie has a legend)
 - `client/src/components/Tooltip.tsx` — `TooltipBubble` popover + `InlineTooltip` term→hint component
 - `client/src/components/ThemeSwitcher.tsx` — palette picker (used in both the picker and the deck header)
@@ -122,7 +124,7 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
 
 ## Slide markdown format
 
-Slides are separated by `---`. All parsing lives in `server/markdown.js`; the regexes are the first 10 lines of that file and each rule below cites them.
+Slides are separated by `---`. All parsing lives in `server/markdown.js`; the regexes are the first 11 lines of that file and each rule below cites them.
 
 | Syntax | Regex | Result |
 | --- | --- | --- |
@@ -131,6 +133,7 @@ Slides are separated by `---`. All parsing lives in `server/markdown.js`; the re
 | `# Title` | `/^#\s+(.*)$/` | slide/column title, first one wins |
 | `## Subtitle` | `/^##\s+(.*)$/` | appended to the subtitle |
 | `> Citation` | `/^>\s*(.*)$/` | reference (see below) |
+| `:name:` alone on a line | `/^:([a-z][a-z0-9]*(?:-[a-z0-9]+)*):$/` | decorative icon, first one wins |
 | `![alt](path)` alone on a line | `/^!\[([^\]]*)\]\(([^)\s]+)\)$/` | block image, first one wins |
 | `![chart:bar](…)` | alt matched by `/^chart:(\w+)$/` | block chart, may repeat |
 | `- ` / `* ` / `+ ` | `/^[-*+]\s+(.*)$/` | bullet item |
@@ -160,10 +163,25 @@ A line starting with `>` is a **reference** — a citation for the slide, e.g. `
 - Rendering is a **toggle**, not a visible list: `SlideDeck.tsx` shows a bookmark button in the **footer**, to the right of the next-slide arrow, so it survives fullscreen (the header's button cluster is hidden there). It is disabled when the current slide has no references, and opens a numbered panel anchored above it. The `R` shortcut toggles the same panel; navigating or pressing `Esc` closes it.
 - References are inlined on export like every other text field, so a `![…](images/x.svg)` inside a citation becomes a `data:` URI in the exported JSON.
 
+### Icons (`:name:`)
+
+`:rocket:` is a lucide icon. There are two positions, and they take very different paths through the code:
+
+- **Inline** — `:zap:` inside a title, subtitle, item or reference renders at text size next to the words. The **server does nothing here**: the shortcode rides along verbatim inside the string and `InlineText` tokenises it. This is the same contract as `**bold**`, so it works everywhere `InlineText` does, with zero parser changes.
+- **Standalone** — a line that is *only* `:name:` becomes a large decorative icon above the slide content, and the line is removed instead of being folded into the subtitle. This **does** need the server: `ICON_RE` in `markdown.js` pulls it out into `slide.icon`, which `SlideView` renders via `DecorativeIcon`. First one wins; `hasContent` counts it so an icon-only slide still parses.
+
+Rules that matter:
+
+- The name must start with a **letter** and be kebab-case. That is what keeps `Ratio:3:1` and `https://host/a:b` from being eaten — the regex requires `[a-z]` right after the first colon.
+- Names are validated against `ICON_MAP` in `client/src/lib/icons.ts`, a **curated 132-icon allow-list**, not all ~2100 lucide icons. A name that is not in the map is left as **literal text** rather than dropped, so a typo degrades to `:no-such-icon:` instead of vanishing. The server accepts any well-formed `:name:`, so this list is the single source of truth.
+- The allow-list exists for bundle reasons. `lucide-react/dynamic` would give all icons with zero code changes but drags a map of 2000+ dynamic-import thunks into the main chunk: measured **+34 kB gzip and 1832 files in `dist/`** versus **+13 kB gzip and 2 files** for the curated list. To add an icon, append it to both lists in `icons.ts` using the name from lucide.dev/icons.
+- **In a layout file (`~~~`), icons belong to columns.** `parseSlide` runs per block, so each block's icon lands on that `SlideColumn`; the combined layout slide has no slide-level `icon`.
+- Icons are plain strings on the wire, so they survive export/import unchanged; `App.tsx` validates `icon` as a string.
+
 
 ### Inline markdown is rendered client-side
 
-The server only rewrites inline **image** paths. `**bold**`, `*italic*`, `` `code` ``, `[text](url)` and `[text](tooltip:hint)` are passed through verbatim and interpreted by `client/src/components/InlineText.tsx`. Adding a new inline construct therefore means editing that component, not the parser. `[text](tooltip:hint)` renders as an `InlineTooltip`; ordinary links open in a new tab. References go through the same `InlineText`, so citations support all of it.
+The server only rewrites inline **image** paths. `**bold**`, `*italic*`, `` `code` ``, `[text](url)`, `[text](tooltip:hint)` and `:icon:` are passed through verbatim and interpreted by `client/src/components/InlineText.tsx`. Adding a new inline construct therefore means editing that component, not the parser. `[text](tooltip:hint)` renders as an `InlineTooltip`; ordinary links open in a new tab. References go through the same `InlineText`, so citations support all of it.
 
 ## Chart data
 

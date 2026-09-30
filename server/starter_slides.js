@@ -3,9 +3,10 @@ export const STARTER_SLIDES = {
 
 A brand-new SlideDeck presentation for you.
 
-- Every slide is a markdown file in slides/
-- The order lives in slides/index.json
-- Press O for the overview, H for keyboard help
+- :file-text: Every slide is a markdown file in slides/
+- :list: The order lives in slides/index.json
+- :keyboard: Press O for the overview, H for keyboard help, R for references
+- :smile: A line holding only :rocket: becomes a big icon above the slide
 
 > Author A, Author B (2024). Cited with a leading > sign.`,
 
@@ -13,10 +14,11 @@ A brand-new SlideDeck presentation for you.
 
 slides/index.json drives the whole deck.
 
-- Sections carry a name and a slides array
-- Every slide is an object with a file field
-- Objects with hidden:true are skipped server-side
-- A line starting with > becomes a reference, shown behind the bookmark icon`,
+- :layers: Sections carry a name and a slides array
+- :file-text: Every slide is an object with a file field
+- :eye: Objects with hidden:true are skipped server-side
+- :quote: A line starting with > becomes a reference, shown behind the bookmark icon
+- :smile: Icons are :name: shortcodes, e.g. :zap:, listed in client/src/lib/icons.ts`,
 
   "03-getting-started.md": `# Getting started
 
@@ -51,6 +53,9 @@ Edit the files and refresh to see changes.
 ## Second column
 - "---" always starts a new slide
 - Charts work in a column too
+- An icon on its own line, like :lightbulb: below, belongs to that column
+
+:database:
 
 ![chart:bar](inline:Q1,Q2,Q3;10,15,8)
 

@@ -8,6 +8,7 @@ const BULLET_RE = /^[-*+]\s+(.*)$/;
 const NUMBERED_RE = /^\d+[.)]\s+(.*)$/;
 const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 const REFERENCE_RE = /^>\s*(.*)$/;
+const ICON_RE = /^:([a-z][a-z0-9]*(?:-[a-z0-9]+)*):$/;
 
 export function resolveMediaPath(src, presentationId) {
   if (
@@ -68,6 +69,7 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
   const charts = [];
   const references = [];
   let image;
+  let decorativeIcon;
 
   for (const rawLine of block.split("\n")) {
     const line = rawLine.trim();
@@ -108,6 +110,12 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
       continue;
     }
 
+    const icon = ICON_RE.exec(line);
+    if (icon) {
+      if (!decorativeIcon) decorativeIcon = icon[1];
+      continue;
+    }
+
     if (!/^[#>]/.test(line)) {
       subtitleLines.push(line);
     }
@@ -118,6 +126,7 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
     subtitleLines.length > 0 ||
     charts.length > 0 ||
     references.length > 0 ||
+    decorativeIcon !== undefined ||
     image !== undefined;
   if (!title && !hasContent) {
     return null;
@@ -131,5 +140,6 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
     image,
     charts: charts.length > 0 ? charts : undefined,
     references: references.length > 0 ? references : undefined,
+    icon: decorativeIcon,
   };
 }
