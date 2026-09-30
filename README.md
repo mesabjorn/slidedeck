@@ -58,3 +58,27 @@ A section object may also carry `"hidden": true` to exclude the entire section:
 ```
 
 `hidden: true` anywhere means the slide or section is omitted from the API response, the slide counter, and the overview. It never reaches the frontend.
+
+## Slide markdown: building a slide up on clicks
+
+Wrap a block in `:::click` … `:::` to hide it until the audience clicks through it. Consecutive lines form one step; a blank line starts the next one. Images, charts, bullets and captions are all allowed as steps:
+
+```markdown
+# Build one thing at a time
+
+:::click
+![first](images/one.svg)
+A caption is a plain line in the same step
+
+- step one
+- step two
+
+![second](images/two.svg)
+:::
+```
+
+The first click shows the first image and its caption, the second adds the two bullets, the third adds the second image; the next click (or the next `→`) moves on to the next slide. `←` steps back, `Esc` rewinds the slide to its first step. A `:::click` block inside a multi-column file (`~~~`) belongs to that column.
+
+If **every** step in a block is a lone image, the images are revealed on top of each other instead of stacked — each new one covers the previous and nudges down-right by 8px, so the pile stays visible. Add a caption or a bullet to a block and it goes back to stacking downwards.
+
+`AGENTS.md` documents every markdown block construct, including charts, `> ` references, `:icon:` shortcodes and `:::click`.

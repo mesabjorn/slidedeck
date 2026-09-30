@@ -9,6 +9,8 @@ const NUMBERED_RE = /^\d+[.)]\s+(.*)$/;
 const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 const REFERENCE_RE = /^>\s*(.*)$/;
 const ICON_RE = /^:([a-z][a-z0-9]*(?:-[a-z0-9]+)*):$/;
+const REVEAL_OPEN_RE = /^:::click\s*$/;
+const REVEAL_CLOSE_RE = /^:::\s*$/;
 
 export function resolveMediaPath(src, presentationId) {
   if (
@@ -68,12 +70,43 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
   const items = [];
   const charts = [];
   const references = [];
+  const reveal = [];
   let image;
   let decorativeIcon;
+  let inReveal = false;
+  let step;
+
+  const flushStep = () => {
+    const finished = finishRevealStep(step);
+    if (finished) reveal.push(finished);
+    step = undefined;
+  };
 
   for (const rawLine of block.split("\n")) {
     const line = rawLine.trim();
+
+    if (inReveal) {
+      if (REVEAL_CLOSE_RE.test(line)) {
+        flushStep();
+        inReveal = false;
+        continue;
+      }
+      if (REVEAL_OPEN_RE.test(line)) continue;
+      if (!line) {
+        flushStep();
+        continue;
+      }
+      step ??= {};
+      addRevealLine(line, step);
+      continue;
+    }
+
     if (!line) continue;
+
+    if (REVEAL_OPEN_RE.test(line)) {
+      inReveal = true;
+      continue;
+    }
 
     const h1 = H1_RE.exec(line);
     if (h1) {
@@ -126,11 +159,14 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
     subtitleLines.length > 0 ||
     charts.length > 0 ||
     references.length > 0 ||
+    reveal.length > 0 ||
     decorativeIcon !== undefined ||
     image !== undefined;
   if (!title && !hasContent) {
     return null;
   }
+
+  flushStep();
 
   return {
     id: `${sourceFile}#${index}`,
@@ -140,6 +176,43 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
     image,
     charts: charts.length > 0 ? charts : undefined,
     references: references.length > 0 ? references : undefined,
+    reveal: reveal.length > 0 ? reveal : undefined,
     icon: decorativeIcon,
+  };
+}
+
+// One line of a :::click block: a block image, a chart, a bullet, or plain text.
+function addRevealLine(line, step) {
+  const img = IMAGE_RE.exec(line);
+  if (img) {
+    const chartType = CHART_RE.exec(img[1]);
+    if (chartType) {
+      step.charts ??= [];
+      step.charts.push({ type: chartType[1], src: img[2] });
+    } else if (!step.image) {
+      step.image = { src: img[2], alt: img[1] };
+    }
+    return;
+  }
+
+  const bullet = BULLET_RE.exec(line) ?? NUMBERED_RE.exec(line);
+  if (bullet) {
+    step.items ??= [];
+    step.items.push(bullet[1]);
+    return;
+  }
+
+  step.text = step.text ? `${step.text} ${line}` : line;
+}
+
+function finishRevealStep(step) {
+  if (!step || (!step.text && !step.items && !step.charts && !step.image)) {
+    return null;
+  }
+  return {
+    text: step.text,
+    items: step.items,
+    image: step.image,
+    charts: step.charts,
   };
 }

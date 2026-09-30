@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import {
   BookBookmark,
   ChevronLeft,
@@ -27,16 +27,28 @@ interface SlideDeckProps {
 }
 
 const SHORTCUTS = [
-  { keys: "→ / Space", action: "Next slide" },
-  { keys: "←", action: "Previous slide" },
+  { keys: "→ / Space", action: "Reveal next step, else next slide" },
+  { keys: "←", action: "Rewind one step, else previous slide" },
   { keys: "Home", action: "First slide" },
   { keys: "End", action: "Last slide" },
+  { keys: "Click", action: "Reveal next step" },
   { keys: "F", action: "Toggle fullscreen" },
   { keys: "O", action: "Toggle overview" },
   { keys: "R", action: "Toggle references" },
   { keys: "H", action: "Show this help" },
-  { keys: "Esc", action: "Close overlays" },
+  { keys: "Esc", action: "Close overlays, rewind steps" },
 ];
+
+function revealStepCount(slide: Slide | undefined): number {
+  if (!slide) return 0;
+  if (slide.columns && slide.columns.length > 0) {
+    return slide.columns.reduce(
+      (max, column) => Math.max(max, column.reveal?.length ?? 0),
+      0,
+    );
+  }
+  return slide.reveal?.length ?? 0;
+}
 
 function Kbd({ children }: { children: ReactNode }) {
   return (
@@ -67,20 +79,54 @@ export function SlideDeck({
   const references = current?.references ?? [];
   const hasReferences = references.length > 0;
 
+  // :::click steps, rewound whenever the slide changes
+  const [reveal, setReveal] = useState({ slideId: current?.id, step: 0 });
+  if (reveal.slideId !== current?.id) {
+    setReveal({ slideId: current?.id, step: 0 });
+  }
+  const stepCount = revealStepCount(current);
+  const revealStep = Math.min(reveal.step, stepCount);
+  const hasHiddenSteps = revealStep < stepCount;
+
   const goTo = useCallback(
     (target: number) => {
+      setReveal((state) => ({ ...state, step: 0 }));
       setIndex(Math.min(Math.max(target, 0), total - 1));
     },
     [total],
   );
 
   const next = useCallback(() => {
+    if (revealStep < stepCount) {
+      setReveal((state) => ({ ...state, step: revealStep + 1 }));
+      return;
+    }
     setIndex((current) => Math.min(current + 1, total - 1));
-  }, [total]);
+  }, [revealStep, stepCount, total]);
 
   const prev = useCallback(() => {
+    if (revealStep > 0) {
+      setReveal((state) => ({ ...state, step: revealStep - 1 }));
+      return;
+    }
     setIndex((current) => Math.max(current - 1, 0));
+  }, [revealStep]);
+
+  const resetReveal = useCallback(() => {
+    setReveal((state) => (state.step === 0 ? state : { ...state, step: 0 }));
   }, []);
+
+  const revealOnClick = useCallback(
+    (event: MouseEvent<HTMLDivElement>) => {
+      if (!hasHiddenSteps) return;
+      const target = event.target as HTMLElement;
+      if (target.closest("a, button, input, textarea, select, [role='button']")) {
+        return;
+      }
+      next();
+    },
+    [hasHiddenSteps, next],
+  );
 
   const toggleFullscreen = useCallback(async () => {
     try {
@@ -221,8 +267,10 @@ export function SlideDeck({
         case "Escape":
           if (document.fullscreenElement) {
             void document.exitFullscreen();
-          } else {
+          } else if (showOverview || showReferences) {
             resetOverlays();
+          } else {
+            resetReveal();
           }
           break;
       }
@@ -236,7 +284,10 @@ export function SlideDeck({
     next,
     prev,
     resetOverlays,
+    resetReveal,
     showHelp,
+    showOverview,
+    showReferences,
     toggleFullscreen,
     total,
   ]);
@@ -301,9 +352,12 @@ export function SlideDeck({
     <div className="relative h-full overflow-hidden bg-bg text-ink">
       <div
         key={current.id}
-        className="animate-slide-in absolute inset-0 flex items-center justify-center p-12 sm:p-16"
+        onClick={revealOnClick}
+        className={`animate-slide-in absolute inset-0 flex items-center justify-center p-12 sm:p-16 ${
+          hasHiddenSteps ? "cursor-pointer" : ""
+        }`}
       >
-        <SlideView slide={current} />
+        <SlideView slide={current} revealStep={revealStep} />
       </div>
 
       <header
@@ -436,11 +490,32 @@ export function SlideDeck({
         </button>
       </footer>
 
-      {index === 0 && !showHelp && !showOverview && !showReferences && (
-        <div className="animate-slide-in absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/10 px-4 py-2 text-sm text-ink">
-          Press <Kbd>→</Kbd> to start
-          <span className="text-faint">·</span>
-          <Kbd>H</Kbd> for shortcuts
+      {index === 0 &&
+        stepCount === 0 &&
+        !showHelp &&
+        !showOverview &&
+        !showReferences && (
+          <div className="animate-slide-in absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/10 px-4 py-2 text-sm text-ink">
+            Press <Kbd>→</Kbd> to start
+            <span className="text-faint">·</span>
+            <Kbd>H</Kbd> for shortcuts
+          </div>
+        )}
+
+      {stepCount > 0 && !showHelp && !showOverview && !showReferences && (
+        <div className="animate-slide-in pointer-events-none absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/10 px-4 py-2 text-sm text-ink">
+          {hasHiddenSteps ? (
+            <>
+              <Kbd>→</Kbd>
+              Reveal step {revealStep + 1} of {stepCount}
+            </>
+          ) : (
+            <>
+              All {stepCount} {stepCount === 1 ? "step" : "steps"} revealed
+              <span className="text-faint">·</span>
+              Click for the next slide
+            </>
+          )}
         </div>
       )}
 

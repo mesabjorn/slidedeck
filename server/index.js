@@ -131,6 +131,20 @@ async function resolveCharts(charts, id) {
   );
 }
 
+async function resolveReveal(reveal, id, resolve) {
+  if (!reveal) return undefined;
+  return Promise.all(
+    reveal.map(async (step) => ({
+      text: step.text ? resolveMediaInText(step.text, resolve) : undefined,
+      items: step.items?.map((item) => resolveMediaInText(item, resolve)),
+      image: step.image
+        ? { ...step.image, src: resolve(step.image.src) }
+        : undefined,
+      charts: step.charts ? await resolveCharts(step.charts, id) : undefined,
+    })),
+  );
+}
+
 app.post("/api/presentations", async (req, res) => {
   try {
     const { title, description } = req.body ?? {};
@@ -253,6 +267,7 @@ async function buildSlidesResponse(id) {
             references: block.references?.map((reference) =>
               resolveMediaInText(reference, resolve),
             ),
+            reveal: await resolveReveal(block.reveal, id, resolve),
             icon: block.icon,
             flex: flex[blockIndex % flex.length],
           })),
@@ -288,6 +303,7 @@ async function buildSlidesResponse(id) {
           references: slide.references?.map((reference) =>
             resolveMediaInText(reference, resolve),
           ),
+          reveal: await resolveReveal(slide.reveal, id, resolve),
           section: section.name,
         })),
       );

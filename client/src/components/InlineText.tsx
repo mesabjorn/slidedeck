@@ -1,53 +1,53 @@
-import { Fragment } from 'react'
-import { getIcon, ICON_NAMES } from '../lib/icons'
-import type { LucideIcon } from 'lucide-react'
-import { InlineTooltip } from './Tooltip'
+import { Fragment } from "react";
+import { getIcon, ICON_NAMES } from "../lib/icons";
+import type { LucideIcon } from "lucide-react";
+import { InlineTooltip } from "./Tooltip";
 
 type Token =
-  | { type: 'text'; text: string }
-  | { type: 'bold'; text: string }
-  | { type: 'italic'; text: string }
-  | { type: 'code'; text: string }
-  | { type: 'link'; text: string; href: string }
-  | { type: 'image'; alt: string; src: string }
-  | { type: 'icon'; name: string }
+  | { type: "text"; text: string }
+  | { type: "bold"; text: string }
+  | { type: "italic"; text: string }
+  | { type: "code"; text: string }
+  | { type: "link"; text: string; href: string }
+  | { type: "image"; alt: string; src: string }
+  | { type: "icon"; name: string };
 
-const ICON_RE = /^:([a-z][a-z0-9]*(?:-[a-z0-9]+)*):$/
-const ICON_NAME_SET: ReadonlySet<string> = new Set(ICON_NAMES)
+const ICON_RE = /^:([a-z][a-z0-9]*(?:-[a-z0-9]+)*):$/;
+const ICON_NAME_SET: ReadonlySet<string> = new Set(ICON_NAMES);
 
 const TOKEN_RE =
-  /(\*\*[^*]+\*\*|`[^`]+`|!\[[^\]]*\]\([^)\s]+\)|\[[^\]]+\]\([^)]+\)|\*[^*]+\*|:[a-z][a-z0-9]*(?:-[a-z0-9]+)*:)/g
+  /(\*\*[^*]+\*\*|`[^`]+`|!\[[^\]]*\]\([^)\s]+\)|\[[^\]]+\]\([^)]+\)|\*[^*]+\*|:[a-z][a-z0-9]*(?:-[a-z0-9]+)*:)/g;
 
 function tokenize(text: string): Token[] {
   return text
     .split(TOKEN_RE)
     .filter(Boolean)
     .map((part): Token => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return { type: 'bold', text: part.slice(2, -2) }
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return { type: "bold", text: part.slice(2, -2) };
       }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return { type: 'code', text: part.slice(1, -1) }
+      if (part.startsWith("`") && part.endsWith("`")) {
+        return { type: "code", text: part.slice(1, -1) };
       }
-      const image = part.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/)
+      const image = part.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
       if (image) {
-        return { type: 'image', alt: image[1], src: image[2] }
+        return { type: "image", alt: image[1], src: image[2] };
       }
-      const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+      const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (link) {
-        return { type: 'link', text: link[1], href: link[2] }
+        return { type: "link", text: link[1], href: link[2] };
       }
       // An unknown `:name:` is left as literal text so typos stay visible
       // instead of silently swallowing content.
-      const icon = ICON_RE.exec(part)
+      const icon = ICON_RE.exec(part);
       if (icon && ICON_NAME_SET.has(icon[1])) {
-        return { type: 'icon', name: icon[1] }
+        return { type: "icon", name: icon[1] };
       }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return { type: 'italic', text: part.slice(1, -1) }
+      if (part.startsWith("*") && part.endsWith("*")) {
+        return { type: "italic", text: part.slice(1, -1) };
       }
-      return { type: 'text', text: part }
-    })
+      return { type: "text", text: part };
+    });
 }
 
 export function InlineText({ text }: { text: string }) {
@@ -55,19 +55,19 @@ export function InlineText({ text }: { text: string }) {
     <>
       {tokenize(text).map((token, i) => {
         switch (token.type) {
-          case 'bold':
+          case "bold":
             return (
-              <strong key={i} className="font-semibold text-heading">
+              <strong key={i} className="font-semibold text-accent">
                 {token.text}
               </strong>
-            )
-          case 'italic':
+            );
+          case "italic":
             return (
               <em key={i} className="italic">
                 {token.text}
               </em>
-            )
-          case 'code':
+            );
+          case "code":
             return (
               <code
                 key={i}
@@ -75,16 +75,16 @@ export function InlineText({ text }: { text: string }) {
               >
                 {token.text}
               </code>
-            )
-          case 'link':
-            if (token.href.startsWith('tooltip:')) {
+            );
+          case "link":
+            if (token.href.startsWith("tooltip:")) {
               return (
                 <InlineTooltip
                   key={i}
                   term={token.text}
-                  hint={token.href.slice('tooltip:'.length).trim()}
+                  hint={token.href.slice("tooltip:".length).trim()}
                 />
-              )
+              );
             }
             return (
               <a
@@ -96,20 +96,20 @@ export function InlineText({ text }: { text: string }) {
               >
                 {token.text}
               </a>
-            )
-          case 'image':
+            );
+          case "image":
             return (
               <img
                 key={i}
                 src={token.src}
                 alt={token.alt}
                 className="inline-block align-[-0.2em]"
-                style={{ height: '1.2em', width: 'auto' }}
+                style={{ height: "1.2em", width: "auto" }}
                 loading="lazy"
               />
-            )
-          case 'icon': {
-            const Glyph = getIcon(token.name) as LucideIcon | undefined
+            );
+          case "icon": {
+            const Glyph = getIcon(token.name) as LucideIcon | undefined;
             return Glyph ? (
               <Glyph
                 key={i}
@@ -118,12 +118,12 @@ export function InlineText({ text }: { text: string }) {
               />
             ) : (
               <Fragment key={i}>{`:${token.name}:`}</Fragment>
-            )
+            );
           }
           default:
-            return <Fragment key={i}>{token.text}</Fragment>
+            return <Fragment key={i}>{token.text}</Fragment>;
         }
       })}
     </>
-  )
+  );
 }

@@ -18,6 +18,13 @@ export interface Chart {
   data: ChartData
 }
 
+export interface SlideRevealStep {
+  text?: string
+  items?: string[]
+  image?: SlideImage
+  charts?: Chart[]
+}
+
 export interface SlideColumn {
   title: string
   subtitle?: string
@@ -25,6 +32,7 @@ export interface SlideColumn {
   image?: SlideImage
   charts?: Chart[]
   references?: string[]
+  reveal?: SlideRevealStep[]
   icon?: string
   flex: number
 }
@@ -37,6 +45,7 @@ export interface Slide {
   image?: SlideImage
   charts?: Chart[]
   references?: string[]
+  reveal?: SlideRevealStep[]
   icon?: string
   section?: string
   columns?: SlideColumn[]

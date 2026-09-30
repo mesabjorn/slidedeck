@@ -4,10 +4,35 @@ import { PresentationPicker } from './components/PresentationPicker'
 import { SlideDeck } from './components/SlideDeck'
 import { usePresentations } from './hooks/usePresentations'
 import { useSlides } from './hooks/useSlides'
-import type { ImportedPresentation, Slide } from './lib/types'
+import type {
+  ImportedPresentation,
+  Slide,
+  SlideImage,
+  SlideRevealStep,
+} from './lib/types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function isImage(value: unknown): value is SlideImage {
+  return isRecord(value) && typeof value.src === 'string' && typeof value.alt === 'string'
+}
+
+function isReveal(value: unknown): value is SlideRevealStep[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (step) =>
+        isRecord(step) &&
+        (step.text === undefined || typeof step.text === 'string') &&
+        (step.items === undefined ||
+          (Array.isArray(step.items) &&
+            step.items.every((item) => typeof item === 'string'))) &&
+        (step.image === undefined || isImage(step.image)) &&
+        (step.charts === undefined || Array.isArray(step.charts)),
+    )
+  )
 }
 
 function isSlide(value: unknown): value is Slide {
@@ -22,16 +47,12 @@ function isSlide(value: unknown): value is Slide {
   }
   if (value.subtitle !== undefined && typeof value.subtitle !== 'string') return false
   if (value.section !== undefined && typeof value.section !== 'string') return false
-  if (
-    value.image !== undefined &&
-    (!isRecord(value.image) ||
-      typeof value.image.src !== 'string' ||
-      typeof value.image.alt !== 'string')
-  ) {
+  if (value.image !== undefined && !isImage(value.image)) {
     return false
   }
   if (value.charts !== undefined && !Array.isArray(value.charts)) return false
   if (value.icon !== undefined && typeof value.icon !== 'string') return false
+  if (value.reveal !== undefined && !isReveal(value.reveal)) return false
   if (
     value.references !== undefined &&
     (!Array.isArray(value.references) ||
@@ -48,7 +69,8 @@ function isSlide(value: unknown): value is Slide {
           typeof column.title === 'string' &&
           Array.isArray(column.items) &&
           column.items.every((item) => typeof item === 'string') &&
-          typeof column.flex === 'number',
+          typeof column.flex === 'number' &&
+          (column.reveal === undefined || isReveal(column.reveal)),
       ))
   ) {
     return false

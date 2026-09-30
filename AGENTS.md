@@ -76,7 +76,10 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
       ],
       "references": ["Author A, Author B (2024). Title."],
       "icon": "rocket",
-      "section": "Start"
+      "section": "Start",
+      "reveal": [                     // :::click steps, revealed on click
+        { "text": "caption", "image": { "src": "…" }, "items": [], "charts": [] }
+      ]
     },
     {
       "id": "04-layouts.md#layout", // column slides use a `#layout` id and empty top-level items
@@ -95,8 +98,8 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
 
 ### Server
 
-- `server/index.js` — Express app: all routes, path-safety helpers, JSON body parsing, static `dist/` + SPA fallback, catch-all 404
-- `server/markdown.js` — markdown parser (`parseSlides`, `parseColumns`) + media path resolution; the only markdown logic
+- `server/index.js` — Express app: all routes, path-safety helpers, JSON body parsing, `resolveCharts` (CSV or `inline:`) and `resolveReveal` (media paths in `:::click` steps), static `dist/` + SPA fallback, catch-all 404
+- `server/markdown.js` — markdown parser (`parseSlides`, `parseColumns`, `addRevealLine` for `:::click` steps) + media path resolution; the only markdown logic
 - `server/csv.js` — `parseCsv` (quoted fields, CRLF, numeric coercion) and `csvToChartData`
 - `server/export.js` — `compileSlidesExport`: rewrites `/api/.../images/...` sources into base64 `data:` URIs so an exported deck is self-contained
 - `server/starter_slides.js` — `STARTER_SLIDES` / `STARTER_INDEX` used by deck creation
@@ -107,7 +110,7 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
 - `client/src/main.tsx` — entry point; calls `applyStoredTheme()` before the first render
 - `client/src/App.tsx` — top-level state: picker vs. deck, imported-deck state, JSON import validation (`importPresentation`), imported-deck re-export
 - `client/src/index.css` — Tailwind v4 `@theme` semantic tokens, palette overrides, `slide-in` animation
-- `client/src/lib/types.ts` — shared types: `Slide`, `SlideColumn`, `SlideImage`, `Chart`, `ChartData`, `PresentationMeta`, `ImportedPresentation` (`references?: string[]` and `icon?: string` on both `Slide` and `SlideColumn`)
+- `client/src/lib/types.ts` — shared types: `Slide`, `SlideColumn`, `SlideRevealStep`, `SlideImage`, `Chart`, `ChartData`, `PresentationMeta`, `ImportedPresentation` (`references?: string[]`, `reveal?: SlideRevealStep[]` and `icon?: string` on both `Slide` and `SlideColumn`)
 - `client/src/lib/themes.ts` — `Theme`, `THEMES` (the palette list), `ThemeId`
 - `client/src/lib/icons.ts` — `ICON_MAP` (curated lucide allow-list), `IconName`, `getIcon()`
 - `client/src/hooks/usePresentations.ts` — loads the deck list; also `createPresentation(title)` → `POST /api/presentations`
@@ -115,7 +118,7 @@ Both `/slides` and `/export` return exactly `{ id, slides }`. **Sections are not
 - `client/src/hooks/useTheme.ts` — `useTheme()` + `applyStoredTheme()` (localStorage key `slidedeck-theme`)
 - `client/src/components/PresentationPicker.tsx` — deck chooser, "New presentation" modal, "Import JSON" file input
 - `client/src/components/SlideDeck.tsx` — navigation, keyboard shortcuts, fullscreen, overview grid + search, help modal, references panel, JSON download
-- `client/src/components/SlideView.tsx` — renders one slide, dispatching to the multi-column layout or single-column body; also draws the standalone decorative icon
+- `client/src/components/SlideView.tsx` — renders one slide, dispatching to the multi-column layout or single-column body; also draws the standalone decorative icon and the revealed `:::click` steps
 - `client/src/components/InlineText.tsx` — renders inline markdown (bold, italic, code, links, tooltips, inline images, `:name:` icons)
 - `client/src/components/ChartView.tsx` — hand-rolled SVG bar/line/pie charts with hover tooltips (pie has a legend)
 - `client/src/components/Tooltip.tsx` — `TooltipBubble` popover + `InlineTooltip` term→hint component
@@ -130,6 +133,7 @@ Slides are separated by `---`. All parsing lives in `server/markdown.js`; the re
 | --- | --- | --- |
 | `---` alone on a line | `/^---\s*$/m` | slide break |
 | `~~~` alone on a line | `/^~~~\s*$/m` | column break |
+| `:::click` / `:::` | `/^:::click\s*$/`, `/^:::\s*$/` | click-reveal block (see below) |
 | `# Title` | `/^#\s+(.*)$/` | slide/column title, first one wins |
 | `## Subtitle` | `/^##\s+(.*)$/` | appended to the subtitle |
 | `> Citation` | `/^>\s*(.*)$/` | reference (see below) |
@@ -179,6 +183,39 @@ Rules that matter:
 - Icons are plain strings on the wire, so they survive export/import unchanged; `App.tsx` validates `icon` as a string.
 
 
+### Click reveals (`:::click`)
+
+A `:::click` … `:::` block hides its content until it is revealed one step at a time, the "build it up" pattern: image 1 → click → image 2 → click → bullets.
+
+```markdown
+# Build one thing at a time
+
+:::click
+![first](images/one.svg)
+A caption is a plain line in the same step
+
+- step one
+- step two
+
+![chart:bar](inline:Build,Test,Ship;30,60,90)
+:::
+```
+
+- **Blank lines separate steps; consecutive lines join one step.** So three bullet lines written together appear at once — insert a blank line between them for a progressive bullet list. A step with an image *and* a caption keeps them together.
+- Each step line is classified by the same rules as a slide body: `![alt](src)` is an image (first one per step wins) or a chart when `alt` is `chart:<type>`, `- `/`1. ` lines are bullets, anything else is `text` — plain lines of a step are joined with single spaces, exactly like a subtitle, and render as a centred caption without a bullet. Inline `:icon:`, `**bold**` and links work inside `text` and `items`.
+- The wire shape is `reveal?: { text?, items?, image?, charts? }[]` on both `Slide` and `SlideColumn`; steps render in that fixed order (image, charts, caption, bullets) regardless of the order they were written in. The server resolves media in steps exactly as it does for the slide body (`resolveReveal` in `index.js`), and `export.js` inlines step images as `data:` URIs, so a reveal deck stays portable.
+- Reveal steps come out of `parseSlide`, so **a `:::click` block in a layout file (`~~~`) belongs to that column**, and `SlideView` advances every column in lockstep: `stepCount` is the longest column, and each column clamps to its own length.
+- **`---` is not a step separator.** Slide splitting happens before the container is parsed, so in an ordinary slide file a `---` inside `:::click` ends the slide; in a layout file it falls through to the step's `text`. Never nest `~~~` inside a block either. A second `:::click` inside a block is ignored, and an unterminated block runs to the end of the slide.
+- Empty steps are dropped, and `hasContent` counts `reveal`, so a reveal-only slide still parses.
+
+On the client, `SlideDeck` owns the step counter and `SlideView` only renders `reveal.slice(0, revealStep)`:
+
+- A click on the slide body, or `→`/`Space`/`Enter`, reveals the next step and only moves on once every step is shown; `←` rewinds a step before leaving the slide. `Home`/`End`, the overview grid and a slide change reset to step 0.
+- Clicks are only intercepted when there are hidden steps, so a slide without a `:::click` block never swallows a click, and clicks on links, buttons and form controls inside the slide body are left alone.
+- `Esc` closes an overlay if one is open and otherwise rewinds to step 0; a chip above the footer shows `Reveal step 2 of 4`, then `All 4 steps revealed`.
+- **A block of nothing but images overlays instead of stacking.** When every step in a `:::click` block is a lone image — no caption, bullets or chart anywhere — `SlideView` gives them one shared box: `RevealOverlay` places every image in the *same grid cell* (`gridArea: "1 / 1"`), so the box grows to the largest image and each one keeps its own aspect ratio instead of being letterboxed into a fixed frame. `z-index` equals the step number and each layer is nudged `8px × step` down and right, so the newest image covers the pile and the pile stays readable. One caption or bullet anywhere in the block switches the whole block back to vertical flow, so the layout cannot change shape as steps arrive. The wire format is the same either way; this is a pure client-side branch (`isImageOnlyReveal` in `SlideView.tsx`).
+- Each newly revealed step mounts with the existing `animate-slide-in` class, so there is no separate animation system. In the overlay branch the wrapper animates once and later layers appear in place, which keeps a covering image from sliding in from the same offset every click.
+
 ### Inline markdown is rendered client-side
 
 The server only rewrites inline **image** paths. `**bold**`, `*italic*`, `` `code` ``, `[text](url)`, `[text](tooltip:hint)` and `:icon:` are passed through verbatim and interpreted by `client/src/components/InlineText.tsx`. Adding a new inline construct therefore means editing that component, not the parser. `[text](tooltip:hint)` renders as an `InlineTooltip`; ordinary links open in a new tab. References go through the same `InlineText`, so citations support all of it.
@@ -203,14 +240,14 @@ Both directions are JSON, and both use the `{ id, slides }` shape from the API, 
 - **Export**: the download button in the deck header (`SlideDeck.tsx`) fetches `/api/presentations/:id/export` as a blob and saves it as `<id>-slides.json`. For an *imported* deck there is no server round-trip — `App.tsx` serialises `{ id, slides }` client-side instead.
 - **Import**: fully client-side. `PresentationPicker` has a hidden `input[type=file]` and an "Import JSON" button; `App.tsx` parses the file, requires a non-empty `slides` array whose entries have string `id`, `title`, and `string[] items`, then keeps the deck in memory. Importing never writes to `server/content/`.
 - Nothing uploads or overwrites content on the server. The only write route is `POST /api/presentations`, which scaffolds a new deck folder from `starter_slides.js` and appends to `presentations.json`.
-- `importPresentation` deliberately keeps unknown extra properties rather than whitelisting fields, but `charts` contents are not validated — a malformed chart passes import and renders blank. `references` *is* checked as `string[]`.
+- `importPresentation` deliberately keeps unknown extra properties rather than whitelisting fields, but `charts` contents are not validated — a malformed chart passes import and renders blank. `references` *is* checked as `string[]`, and `reveal` is checked as an array of steps with string `text`/`string[] items`/`image`/array `charts` (`isReveal` in `App.tsx`), because a bad step would throw during render.
 
 ## Conventions
 
 - Styling is Tailwind utility classes; no standalone CSS modules.
 - Colors are semantic tokens (`--color-bg`, `--color-accent`, `--color-panel`, …) generated from `@theme` in `client/src/index.css`, with per-palette overrides on `:root[data-theme='…']`. The palette list and selection live in `client/src/lib/themes.ts`, `client/src/hooks/useTheme.ts` (localStorage + `data-theme`), and `client/src/components/ThemeSwitcher.tsx` (picker + deck header). The five palettes are `midnight`, `dusk`, `forest`, `paper`, `daylight`. New palettes need both a `[data-theme]` block in `index.css` and an entry in `THEMES`.
 - Icons come from `lucide-react`.
-- Keyboard shortcuts are defined in one place, the `SHORTCUTS` table in `client/src/components/SlideDeck.tsx`, alongside the `window` keydown handler: `→`/`↓`/`PageDown`/`Space`/`Enter` next, `←`/`↑`/`PageUp` previous, `Home`/`End` first/last, `F` fullscreen, `O`/`G` overview, `R` references, `H`/`?` help, `Esc` close overlays. The handler ignores events with modifier keys and all but `Escape` while focus is in a text field. `resetOverlays` closes the overview and the references panel together. When adding a shortcut, update `SHORTCUTS` too.
+- Keyboard shortcuts are defined in one place, the `SHORTCUTS` table in `client/src/components/SlideDeck.tsx`, alongside the `window` keydown handler: `→`/`↓`/`PageDown`/`Space`/`Enter` next, `←`/`↑`/`PageUp` previous, `Home`/`End` first/last, `F` fullscreen, `O`/`G` overview, `R` references, `H`/`?` help, `Esc` close overlays (or rewind `:::click` steps when none is open). The next/previous keys step through `:::click` steps first and only change slide at the ends. The handler ignores events with modifier keys and all but `Escape` while focus is in a text field. `resetOverlays` closes the overview and the references panel together. When adding a shortcut, update `SHORTCUTS` too.
 - React Compiler/Babel preset is enabled (`client/vite.config.ts`) — follow rules-of-hooks; oxlint enforces this.
 - Server code is plain ESM JavaScript (`"type": "module"`), no build step.
 - No test framework is configured.

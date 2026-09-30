@@ -73,6 +73,28 @@ async function embedTextImages(text, id, contentDir, cache) {
   return result + text.slice(cursor);
 }
 
+async function embedRevealImages(reveal, id, contentDir, cache) {
+  return Promise.all(
+    reveal.map(async (step) => ({
+      text: step.text !== undefined
+        ? await embedTextImages(step.text, id, contentDir, cache)
+        : undefined,
+      items: step.items !== undefined
+        ? await Promise.all(
+            step.items.map((item) => embedTextImages(item, id, contentDir, cache)),
+          )
+        : undefined,
+      image: step.image !== undefined
+        ? {
+            ...step.image,
+            src: await embedImageSource(step.image.src, id, contentDir, cache),
+          }
+        : undefined,
+      charts: step.charts,
+    })),
+  );
+}
+
 async function embedColumnImages(column, id, contentDir, cache) {
   const result = {
     ...column,
@@ -89,6 +111,9 @@ async function embedColumnImages(column, id, contentDir, cache) {
     result.references = await Promise.all(
       column.references.map((reference) => embedTextImages(reference, id, contentDir, cache)),
     );
+  }
+  if (column.reveal !== undefined) {
+    result.reveal = await embedRevealImages(column.reveal, id, contentDir, cache);
   }
   if (column.image !== undefined) {
     result.image = {
@@ -115,6 +140,9 @@ async function embedSlideImages(slide, id, contentDir, cache) {
     result.references = await Promise.all(
       slide.references.map((reference) => embedTextImages(reference, id, contentDir, cache)),
     );
+  }
+  if (slide.reveal !== undefined) {
+    result.reveal = await embedRevealImages(slide.reveal, id, contentDir, cache);
   }
   if (slide.image !== undefined) {
     result.image = {

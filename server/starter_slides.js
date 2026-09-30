@@ -18,6 +18,7 @@ slides/index.json drives the whole deck.
 - :file-text: Every slide is an object with a file field
 - :eye: Objects with hidden:true are skipped server-side
 - :quote: A line starting with > becomes a reference, shown behind the bookmark icon
+- :play: A :::click block reveals its steps one click at a time
 - :smile: Icons are :name: shortcodes, e.g. :zap:, listed in client/src/lib/icons.ts`,
 
   "03-getting-started.md": `# Getting started
@@ -64,6 +65,22 @@ Edit the files and refresh to see changes.
 ## Third column
 - Three blocks with [1,2,1] make the middle one wider
 - Extra "~~~" blocks just fill remaining slots`,
+  "06-click-reveal.md": `# Click reveals
+
+A :::click block hides its steps until you click or press the right arrow.
+
+:::click
+- This bullet is the first step, and the right arrow or a click reveals it
+
+A plain line like this is a caption, revealed as a step of its own
+
+- These three bullets are one step
+- because they are written without
+- blank lines between them
+
+![chart:bar](inline:Build,Test,Ship;30,60,90)
+Images, captions and :rocket: icons reveal one step at a time too
+:::`,
 };
 
 export const STARTER_INDEX = [
@@ -79,4 +96,5 @@ export const STARTER_INDEX = [
       { file: "05-columns.md", layout: [1, 2, 1] },
     ],
   },
+  { name: "Reveals", slides: [{ file: "06-click-reveal.md" }] },
 ];
