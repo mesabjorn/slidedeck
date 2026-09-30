@@ -250,6 +250,9 @@ async function buildSlidesResponse(id) {
             charts: block.charts
               ? await resolveCharts(block.charts, id)
               : undefined,
+            references: block.references?.map((reference) =>
+              resolveMediaInText(reference, resolve),
+            ),
             flex: flex[blockIndex % flex.length],
           })),
         );
@@ -281,6 +284,9 @@ async function buildSlidesResponse(id) {
           charts: slide.charts
             ? await resolveCharts(slide.charts, id)
             : undefined,
+          references: slide.references?.map((reference) =>
+            resolveMediaInText(reference, resolve),
+          ),
           section: section.name,
         })),
       );

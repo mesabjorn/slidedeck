@@ -7,6 +7,7 @@ const CHART_RE = /^chart:(\w+)$/;
 const BULLET_RE = /^[-*+]\s+(.*)$/;
 const NUMBERED_RE = /^\d+[.)]\s+(.*)$/;
 const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+const REFERENCE_RE = /^>\s*(.*)$/;
 
 export function resolveMediaPath(src, presentationId) {
   if (
@@ -65,6 +66,7 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
   const subtitleLines = [];
   const items = [];
   const charts = [];
+  const references = [];
   let image;
 
   for (const rawLine of block.split("\n")) {
@@ -94,6 +96,12 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
       continue;
     }
 
+    const reference = REFERENCE_RE.exec(line);
+    if (reference) {
+      if (reference[1]) references.push(reference[1]);
+      continue;
+    }
+
     const bullet = BULLET_RE.exec(line) ?? NUMBERED_RE.exec(line);
     if (bullet) {
       items.push(bullet[1]);
@@ -109,6 +117,7 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
     items.length > 0 ||
     subtitleLines.length > 0 ||
     charts.length > 0 ||
+    references.length > 0 ||
     image !== undefined;
   if (!title && !hasContent) {
     return null;
@@ -121,5 +130,6 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
     items,
     image,
     charts: charts.length > 0 ? charts : undefined,
+    references: references.length > 0 ? references : undefined,
   };
 }

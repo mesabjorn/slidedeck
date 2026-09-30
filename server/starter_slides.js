@@ -5,7 +5,9 @@ A brand-new SlideDeck presentation for you.
 
 - Every slide is a markdown file in slides/
 - The order lives in slides/index.json
-- Press O for the overview, H for keyboard help`,
+- Press O for the overview, H for keyboard help
+
+> Author A, Author B (2024). Cited with a leading > sign.`,
 
   "02-structure.md": `# Deck structure
 
@@ -13,7 +15,8 @@ slides/index.json drives the whole deck.
 
 - Sections carry a name and a slides array
 - Every slide is an object with a file field
-- Objects with hidden:true are skipped server-side`,
+- Objects with hidden:true are skipped server-side
+- A line starting with > becomes a reference, shown behind the bookmark icon`,
 
   "03-getting-started.md": `# Getting started
 
