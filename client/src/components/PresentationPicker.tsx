@@ -201,6 +201,10 @@ export function PresentationPicker({
             </code>{" "}
             exists and points at valid presentation folders.
           </p>
+          <div className="absolute top-6 right-6 flex items-center gap-3">
+            {" "}
+            {importControl}
+          </div>
         </div>
       </main>
     );
