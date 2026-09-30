@@ -32,6 +32,13 @@ function isSlide(value: unknown): value is Slide {
   }
   if (value.charts !== undefined && !Array.isArray(value.charts)) return false
   if (
+    value.references !== undefined &&
+    (!Array.isArray(value.references) ||
+      !value.references.every((reference) => typeof reference === 'string'))
+  ) {
+    return false
+  }
+  if (
     value.columns !== undefined &&
     (!Array.isArray(value.columns) ||
       !value.columns.every(

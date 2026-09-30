@@ -85,6 +85,11 @@ async function embedColumnImages(column, id, contentDir, cache) {
   if (column.subtitle !== undefined) {
     result.subtitle = await embedTextImages(column.subtitle, id, contentDir, cache);
   }
+  if (column.references !== undefined) {
+    result.references = await Promise.all(
+      column.references.map((reference) => embedTextImages(reference, id, contentDir, cache)),
+    );
+  }
   if (column.image !== undefined) {
     result.image = {
       ...column.image,
@@ -105,6 +110,11 @@ async function embedSlideImages(slide, id, contentDir, cache) {
 
   if (slide.subtitle !== undefined) {
     result.subtitle = await embedTextImages(slide.subtitle, id, contentDir, cache);
+  }
+  if (slide.references !== undefined) {
+    result.references = await Promise.all(
+      slide.references.map((reference) => embedTextImages(reference, id, contentDir, cache)),
+    );
   }
   if (slide.image !== undefined) {
     result.image = {

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useCallback, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
-  BookMarked,
+  BookBookmark,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -12,38 +12,38 @@ import {
   Presentation,
   Search,
   X,
-} from 'lucide-react'
-import type { Slide } from '../lib/types'
-import { InlineText } from './InlineText'
-import { SlideReferences } from './SlideReferences'
-import { SlideView } from './SlideView'
-import { ThemeSwitcher } from './ThemeSwitcher'
+} from "lucide-react";
+import type { Slide } from "../lib/types";
+import { InlineText } from "./InlineText";
+import { SlideView } from "./SlideView";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 interface SlideDeckProps {
-  slides: Slide[]
-  presentationId?: string
-  presentationTitle?: string
-  onDownload?: () => void | Promise<void>
-  onExit?: () => void
+  slides: Slide[];
+  presentationId?: string;
+  presentationTitle?: string;
+  onDownload?: () => void | Promise<void>;
+  onExit?: () => void;
 }
 
 const SHORTCUTS = [
-  { keys: '→ / Space', action: 'Next slide' },
-  { keys: '←', action: 'Previous slide' },
-  { keys: 'Home', action: 'First slide' },
-  { keys: 'End', action: 'Last slide' },
-  { keys: 'F', action: 'Toggle fullscreen' },
-  { keys: 'O', action: 'Toggle overview' },
-  { keys: 'H', action: 'Show this help' },
-  { keys: 'Esc', action: 'Close overlays' },
-]
+  { keys: "→ / Space", action: "Next slide" },
+  { keys: "←", action: "Previous slide" },
+  { keys: "Home", action: "First slide" },
+  { keys: "End", action: "Last slide" },
+  { keys: "F", action: "Toggle fullscreen" },
+  { keys: "O", action: "Toggle overview" },
+  { keys: "R", action: "Toggle references" },
+  { keys: "H", action: "Show this help" },
+  { keys: "Esc", action: "Close overlays" },
+];
 
 function Kbd({ children }: { children: ReactNode }) {
   return (
     <kbd className="rounded-md border border-border/15 bg-surface/10 px-2 py-1 font-mono text-xs text-ink">
       {children}
     </kbd>
-  )
+  );
 }
 
 export function SlideDeck({
@@ -53,215 +53,238 @@ export function SlideDeck({
   onDownload,
   onExit,
 }: SlideDeckProps) {
-  const total = slides.length
-  const [index, setIndex] = useState(0)
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
-  const [downloadError, setDownloadError] = useState<string | null>(null)
-  const [showOverview, setShowOverview] = useState(false)
-  const [showHelp, setShowHelp] = useState(false)
-  const [query, setQuery] = useState('')
+  const total = slides.length;
+  const [index, setIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [showOverview, setShowOverview] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showReferences, setShowReferences] = useState(false);
+  const [query, setQuery] = useState("");
 
-  const goTo = useCallback((target: number) => {
-    setIndex(Math.min(Math.max(target, 0), total - 1))
-  }, [total])
+  const current = slides[index] ?? slides[0];
+  const references = current?.references ?? [];
+  const hasReferences = references.length > 0;
+
+  const goTo = useCallback(
+    (target: number) => {
+      setIndex(Math.min(Math.max(target, 0), total - 1));
+    },
+    [total],
+  );
 
   const next = useCallback(() => {
-    setIndex((current) => Math.min(current + 1, total - 1))
-  }, [total])
+    setIndex((current) => Math.min(current + 1, total - 1));
+  }, [total]);
 
   const prev = useCallback(() => {
-    setIndex((current) => Math.max(current - 1, 0))
-  }, [])
+    setIndex((current) => Math.max(current - 1, 0));
+  }, []);
 
   const toggleFullscreen = useCallback(async () => {
     try {
       if (document.fullscreenElement) {
-        await document.exitFullscreen()
+        await document.exitFullscreen();
       } else {
-        await document.documentElement.requestFullscreen()
+        await document.documentElement.requestFullscreen();
       }
     } catch {
       // Fullscreen API unavailable
     }
-  }, [])
+  }, []);
 
   const downloadSlides = useCallback(async (): Promise<void> => {
-    if (isDownloading || (!onDownload && !presentationId)) return
-    setIsDownloading(true)
-    setDownloadError(null)
+    if (isDownloading || (!onDownload && !presentationId)) return;
+    setIsDownloading(true);
+    setDownloadError(null);
     try {
       if (onDownload) {
-        await onDownload()
-        return
+        await onDownload();
+        return;
       }
-      if (!presentationId) return
+      if (!presentationId) return;
 
       const response = await fetch(
         `/api/presentations/${encodeURIComponent(presentationId)}/export`,
-      )
+      );
       if (!response.ok) {
-        throw new Error(`Failed to download slides (${response.status})`)
+        throw new Error(`Failed to download slides (${response.status})`);
       }
-      const blob = await response.blob()
-      const objectUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = objectUrl
-      link.download = `${presentationId}-slides.json`
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `${presentationId}-slides.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
     } catch (err) {
-      setDownloadError(err instanceof Error ? err.message : 'Unable to download slides')
+      setDownloadError(
+        err instanceof Error ? err.message : "Unable to download slides",
+      );
     } finally {
-      setIsDownloading(false)
+      setIsDownloading(false);
     }
-  }, [isDownloading, onDownload, presentationId])
+  }, [isDownloading, onDownload, presentationId]);
 
-  const resetOverview = useCallback(() => {
-    setShowOverview(false)
-    setQuery('')
-  }, [])
+  const resetOverlays = useCallback(() => {
+    setShowOverview(false);
+    setShowReferences(false);
+    setQuery("");
+  }, []);
 
   useEffect(() => {
     function onFullscreenChange() {
-      setIsFullscreen(Boolean(document.fullscreenElement))
+      setIsFullscreen(Boolean(document.fullscreenElement));
     }
-    document.addEventListener('fullscreenchange', onFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
-  }, [])
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
 
-      const target = event.target as HTMLElement
+      const target = event.target as HTMLElement;
       const isTyping =
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
-        target.isContentEditable
+        target.isContentEditable;
 
       if (isTyping) {
-        if (event.key === 'Escape') resetOverview()
-        return
+        if (event.key === "Escape") resetOverlays();
+        return;
       }
 
       if (showHelp) {
-        if (event.key === 'Escape' || event.key === 'h' || event.key === 'H' || event.key === '?') {
-          setShowHelp(false)
+        if (
+          event.key === "Escape" ||
+          event.key === "h" ||
+          event.key === "H" ||
+          event.key === "?"
+        ) {
+          setShowHelp(false);
         }
-        return
+        return;
       }
 
       switch (event.key) {
-        case 'ArrowRight':
-        case 'ArrowDown':
-        case 'PageDown':
-        case ' ':
-        case 'Enter':
-          event.preventDefault()
-          resetOverview()
-          next()
-          break
-        case 'ArrowLeft':
-        case 'ArrowUp':
-        case 'PageUp':
-          event.preventDefault()
-          resetOverview()
-          prev()
-          break
-        case 'Home':
-          event.preventDefault()
-          resetOverview()
-          goTo(0)
-          break
-        case 'End':
-          event.preventDefault()
-          resetOverview()
-          goTo(total - 1)
-          break
-        case 'f':
-        case 'F':
-          void toggleFullscreen()
-          break
-        case 'o':
-        case 'O':
-        case 'g':
-        case 'G':
-          setQuery('')
-          setShowOverview((current) => !current)
-          break
-        case 'h':
-        case 'H':
-        case '?':
-          setShowHelp(true)
-          break
-        case 'Escape':
+        case "ArrowRight":
+        case "ArrowDown":
+        case "PageDown":
+        case " ":
+        case "Enter":
+          event.preventDefault();
+          resetOverlays();
+          next();
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+        case "PageUp":
+          event.preventDefault();
+          resetOverlays();
+          prev();
+          break;
+        case "Home":
+          event.preventDefault();
+          resetOverlays();
+          goTo(0);
+          break;
+        case "End":
+          event.preventDefault();
+          resetOverlays();
+          goTo(total - 1);
+          break;
+        case "f":
+        case "F":
+          void toggleFullscreen();
+          break;
+        case "o":
+        case "O":
+        case "g":
+        case "G":
+          setQuery("");
+          setShowOverview((current) => !current);
+          break;
+        case "r":
+        case "R":
+          if (hasReferences) setShowReferences((current) => !current);
+          break;
+        case "h":
+        case "H":
+        case "?":
+          setShowHelp(true);
+          break;
+        case "Escape":
           if (document.fullscreenElement) {
-            void document.exitFullscreen()
+            void document.exitFullscreen();
           } else {
-            resetOverview()
+            resetOverlays();
           }
-          break
+          break;
       }
     }
 
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [goTo, next, prev, resetOverview, showHelp, toggleFullscreen, total])
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    goTo,
+    hasReferences,
+    next,
+    prev,
+    resetOverlays,
+    showHelp,
+    toggleFullscreen,
+    total,
+  ]);
 
-  const current = slides[index] ?? slides[0]
-  const progress = total > 1 ? (index / (total - 1)) * 100 : 100
+  const progress = total > 1 ? (index / (total - 1)) * 100 : 100;
 
-  const normalizedQuery = query.trim().toLowerCase()
+  const normalizedQuery = query.trim().toLowerCase();
   const matching = slides
     .map((slide, i) => ({ slide, i }))
     .filter(({ slide }) => {
-      if (normalizedQuery.length === 0) return true
+      if (normalizedQuery.length === 0) return true;
       return (
         slide.title.toLowerCase().includes(normalizedQuery) ||
         slide.subtitle?.toLowerCase().includes(normalizedQuery) ||
-        slide.items.some((item) => item.toLowerCase().includes(normalizedQuery)) ||
-        (slide.references?.some((reference) =>
-          reference.toLowerCase().includes(normalizedQuery),
-        ) ?? false)
-      )
-    })
+        slide.items.some((item) => item.toLowerCase().includes(normalizedQuery))
+      );
+    });
 
   const grouped = matching.reduce<{ name?: string; cards: typeof matching }[]>(
     (acc, match) => {
-      const name = match.slide.section
-      const last = acc[acc.length - 1]
+      const name = match.slide.section;
+      const last = acc[acc.length - 1];
       if (last && last.name === name) {
-        last.cards.push(match)
+        last.cards.push(match);
       } else {
-        acc.push({ name, cards: [match] })
+        acc.push({ name, cards: [match] });
       }
-      return acc
+      return acc;
     },
     [],
-  )
+  );
 
   const overviewCard = ({ slide, i }: { slide: Slide; i: number }) => (
     <button
       type="button"
       key={slide.id}
       onClick={() => {
-        goTo(i)
-        resetOverview()
+        goTo(i);
+        resetOverlays();
       }}
       className={`rounded-xl border p-5 text-left transition ${
         i === index
-          ? 'border-accent bg-accent/10'
-          : 'border-border/10 bg-surface/5 hover:border-border/30 hover:bg-surface/10'
+          ? "border-accent bg-accent/10"
+          : "border-border/10 bg-surface/5 hover:border-border/30 hover:bg-surface/10"
       }`}
     >
       <span className="font-mono text-xs text-faint">
-        {String(i + 1).padStart(2, '0')}
-        {slide.references && slide.references.length > 0 && (
-          <BookMarked className="ml-1.5 inline h-3 w-3 align-[-0.1em]" />
-        )}
+        {String(i + 1).padStart(2, "0")}
       </span>
       <span className="mt-2 block text-base leading-snug font-medium text-heading">
         <InlineText text={slide.title} />
@@ -272,7 +295,7 @@ export function SlideDeck({
         </span>
       )}
     </button>
-  )
+  );
 
   return (
     <div className="relative h-full overflow-hidden bg-bg text-ink">
@@ -283,9 +306,11 @@ export function SlideDeck({
         <SlideView slide={current} />
       </div>
 
-      <header className={`absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-5 py-4 ${
-        isFullscreen ? 'justify-center' : ''
-      }`}>
+      <header
+        className={`absolute top-0 left-0 right-0 z-10 flex items-center gap-3 px-5 py-4 ${
+          isFullscreen ? "justify-center" : ""
+        }`}
+      >
         {!isFullscreen && (
           <div className="flex gap-2">
             {onExit && (
@@ -312,8 +337,8 @@ export function SlideDeck({
         <span
           className={`font-mono text-sm ${
             isFullscreen
-              ? 'text-faint/70'
-              : 'rounded-full bg-surface/10 px-3 py-1 text-ink'
+              ? "text-faint/70"
+              : "rounded-full bg-surface/10 px-3 py-1 text-ink"
           }`}
         >
           {index + 1} / {total}
@@ -325,8 +350,8 @@ export function SlideDeck({
               type="button"
               onClick={() => void downloadSlides()}
               disabled={isDownloading}
-              title={downloadError ?? 'Download slides JSON'}
-              aria-label={downloadError ?? 'Download slides JSON'}
+              title={downloadError ?? "Download slides JSON"}
+              aria-label={downloadError ?? "Download slides JSON"}
               aria-busy={isDownloading}
               className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -340,8 +365,8 @@ export function SlideDeck({
             <button
               type="button"
               onClick={() => {
-                setQuery('')
-                setShowOverview((current) => !current)
+                setQuery("");
+                setShowOverview((current) => !current);
               }}
               title="Overview (O)"
               className="rounded-full bg-surface/10 p-2.5 text-muted transition hover:bg-surface/20 hover:text-heading"
@@ -359,6 +384,24 @@ export function SlideDeck({
           </div>
         )}
       </header>
+
+      <button
+        type="button"
+        onClick={() => setShowReferences((current) => !current)}
+        disabled={!hasReferences}
+        title={hasReferences ? "References (R)" : "No references on this slide"}
+        aria-label="Toggle references"
+        aria-expanded={hasReferences ? showReferences : undefined}
+        className={`absolute right-5 bottom-20 ml-3 rounded-full bg-surface/10 p-2.5 transition hover:bg-surface/20 disabled:cursor-not-allowed disabled:opacity-40 ${
+          hasReferences
+            ? showReferences
+              ? "bg-accent/20 text-accent"
+              : "text-muted hover:text-heading"
+            : "text-muted"
+        }`}
+      >
+        <BookBookmark className={`h-5 w-5`} />
+      </button>
 
       <footer className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-4 px-5 py-4">
         <button
@@ -389,13 +432,7 @@ export function SlideDeck({
         </button>
       </footer>
 
-      {current.references && current.references.length > 0 && (
-        <div className="absolute right-5 bottom-24 z-10">
-          <SlideReferences references={current.references} />
-        </div>
-      )}
-
-      {index === 0 && !showHelp && !showOverview && (
+      {index === 0 && !showHelp && !showOverview && !showReferences && (
         <div className="animate-slide-in absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/10 px-4 py-2 text-sm text-ink">
           Press <Kbd>→</Kbd> to start
           <span className="text-faint">·</span>
@@ -408,7 +445,7 @@ export function SlideDeck({
           <div className="mx-auto w-full max-w-6xl">
             <div className="mb-6 flex items-end justify-between">
               <h2 className="text-xl font-semibold text-heading">
-                {presentationTitle ?? 'Overview'}
+                {presentationTitle ?? "Overview"}
               </h2>
               <span className="text-sm text-faint">
                 {normalizedQuery.length > 0
@@ -458,11 +495,44 @@ export function SlideDeck({
         </div>
       )}
 
+      {showReferences && hasReferences && (
+        <div className="animate-slide-in absolute right-5 bottom-30 z-20 w-[calc(100%-2.5rem)] max-w-sm rounded-2xl border border-border/10 bg-panel p-6 shadow-2xl sm:w-full">
+          <div className="flex items-start justify-between gap-4">
+            <h2 className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">
+              References
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowReferences(false)}
+              className="-mt-1 -mr-1 text-muted transition hover:text-heading"
+              aria-label="Close references"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <ul className="mt-4 space-y-3 text-left text-sm leading-relaxed text-ink">
+            {references.map((reference, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="shrink-0 font-mono text-xs text-faint">
+                  [{i + 1}]
+                </span>
+                <span>
+                  <InlineText text={reference} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {showHelp && (
         <div className="absolute inset-0 z-30 grid place-items-center bg-overlay/80 p-6 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-border/10 bg-panel p-8 shadow-2xl">
             <div className="flex items-start justify-between">
-              <h2 className="text-2xl font-semibold text-heading">Keyboard shortcuts</h2>
+              <h2 className="text-2xl font-semibold text-heading">
+                Keyboard shortcuts
+              </h2>
               <button
                 type="button"
                 onClick={() => setShowHelp(false)}
@@ -475,7 +545,10 @@ export function SlideDeck({
 
             <dl className="mt-6 space-y-3 text-sm">
               {SHORTCUTS.map((shortcut) => (
-                <div key={shortcut.keys} className="flex items-center justify-between gap-4">
+                <div
+                  key={shortcut.keys}
+                  className="flex items-center justify-between gap-4"
+                >
                   <dt className="text-muted">{shortcut.action}</dt>
                   <dd>
                     <Kbd>{shortcut.keys}</Kbd>
@@ -487,5 +560,5 @@ export function SlideDeck({
         </div>
       )}
     </div>
-  )
+  );
 }

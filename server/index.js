@@ -286,16 +286,37 @@ async function buildSlidesResponse(id) {
             charts: slide.charts
               ? await resolveCharts(slide.charts, id)
               : undefined,
-            references: slide.references
-              ? slide.references.map((text) =>
-                  resolveMediaInText(text, resolve),
-                )
-              : undefined,
-            section: section.name,
+            references: block.references?.map((reference) =>
+              resolveMediaInText(reference, resolve),
+            ),
+            flex: flex[blockIndex % flex.length],
           })),
         );
         parsed.push(...resolved);
       }
+
+      const slides = parseSlides(text, entry.file);
+      const resolved = await Promise.all(
+        slides.map(async (slide) => ({
+          ...slide,
+          title: resolveMediaInText(slide.title, resolve),
+          subtitle: slide.subtitle
+            ? resolveMediaInText(slide.subtitle, resolve)
+            : undefined,
+          items: slide.items.map((item) => resolveMediaInText(item, resolve)),
+          image: slide.image
+            ? { ...slide.image, src: resolve(slide.image.src) }
+            : undefined,
+          charts: slide.charts
+            ? await resolveCharts(slide.charts, id)
+            : undefined,
+          references: slide.references?.map((reference) =>
+            resolveMediaInText(reference, resolve),
+          ),
+          section: section.name,
+        })),
+      );
+      parsed.push(...resolved);
     }
     res.json({ id, slides: parsed });
   } catch (err) {
