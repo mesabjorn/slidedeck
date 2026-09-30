@@ -79,6 +79,8 @@ A caption is a plain line in the same step
 
 The first click shows the first image and its caption, the second adds the two bullets, the third adds the second image; the next click (or the next `→`) moves on to the next slide. `←` steps back, `Esc` rewinds the slide to its first step. A `:::click` block inside a multi-column file (`~~~`) belongs to that column.
 
+Clicking anywhere on a slide advances it — the next reveal step if one is left, otherwise the next slide — on every slide, with or without a `:::click` block. `→`, `Space` and the chevron buttons do the same.
+
 If **every** step in a block is a lone image, the images are revealed on top of each other instead of stacked — each new one covers the previous and nudges down-right by 8px, so the pile stays visible. Add a caption or a bullet to a block and it goes back to stacking downwards.
 
 `AGENTS.md` documents every markdown block construct, including charts, `> ` references, `:icon:` shortcodes and `:::click`.

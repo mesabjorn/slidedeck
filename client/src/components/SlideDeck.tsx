@@ -31,7 +31,7 @@ const SHORTCUTS = [
   { keys: "←", action: "Rewind one step, else previous slide" },
   { keys: "Home", action: "First slide" },
   { keys: "End", action: "Last slide" },
-  { keys: "Click", action: "Reveal next step" },
+  { keys: "Click", action: "Reveal next step, else next slide" },
   { keys: "F", action: "Toggle fullscreen" },
   { keys: "O", action: "Toggle overview" },
   { keys: "R", action: "Toggle references" },
@@ -116,16 +116,17 @@ export function SlideDeck({
     setReveal((state) => (state.step === 0 ? state : { ...state, step: 0 }));
   }, []);
 
-  const revealOnClick = useCallback(
+  // A click anywhere on the slide advances: the next reveal step if there is
+  // one left, otherwise the next slide.
+  const advanceOnClick = useCallback(
     (event: MouseEvent<HTMLDivElement>) => {
-      if (!hasHiddenSteps) return;
       const target = event.target as HTMLElement;
       if (target.closest("a, button, input, textarea, select, [role='button']")) {
         return;
       }
       next();
     },
-    [hasHiddenSteps, next],
+    [next],
   );
 
   const toggleFullscreen = useCallback(async () => {
@@ -352,10 +353,8 @@ export function SlideDeck({
     <div className="relative h-full overflow-hidden bg-bg text-ink">
       <div
         key={current.id}
-        onClick={revealOnClick}
-        className={`animate-slide-in absolute inset-0 flex items-center justify-center p-12 sm:p-16 ${
-          hasHiddenSteps ? "cursor-pointer" : ""
-        }`}
+        onClick={advanceOnClick}
+        className="animate-slide-in absolute inset-0 flex cursor-pointer items-center justify-center p-12 sm:p-16"
       >
         <SlideView slide={current} revealStep={revealStep} />
       </div>
@@ -496,7 +495,7 @@ export function SlideDeck({
         !showOverview &&
         !showReferences && (
           <div className="animate-slide-in absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/10 px-4 py-2 text-sm text-ink">
-            Press <Kbd>→</Kbd> to start
+            Click or press <Kbd>→</Kbd> to start
             <span className="text-faint">·</span>
             <Kbd>H</Kbd> for shortcuts
           </div>
