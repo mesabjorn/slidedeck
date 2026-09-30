@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n server,client \"npm:dev:server\" \"npm:dev:client\"",
+    "dev": "concurrently -k -n server,client \"npm:dev:server\" \"npm:dev:client\" -c green,blue",
     "dev:client": "npm run dev --prefix client",
     "dev:server": "node --watch server/index.js",
     "build": "npm run build --prefix client",

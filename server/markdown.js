@@ -6,6 +6,7 @@ const IMAGE_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/
 const CHART_RE = /^chart:(\w+)$/
 const BULLET_RE = /^[-*+]\s+(.*)$/
 const NUMBERED_RE = /^\d+[.)]\s+(.*)$/
+const REFERENCE_RE = /^>\s?(.*)$/
 const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g
 
 export function resolveMediaPath(src, presentationId) {
@@ -55,6 +56,7 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
   let title = ''
   const subtitleLines = []
   const items = []
+  const references = []
   const charts = []
   let image
 
@@ -85,6 +87,13 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
       continue
     }
 
+    const reference = REFERENCE_RE.exec(line)
+    if (reference) {
+      const text = reference[1].trim()
+      if (text) references.push(text)
+      continue
+    }
+
     const bullet = BULLET_RE.exec(line) ?? NUMBERED_RE.exec(line)
     if (bullet) {
       items.push(bullet[1])
@@ -108,5 +117,6 @@ function parseSlide(block, sourceFile, index, fallbackTitle = true) {
     items,
     image,
     charts: charts.length > 0 ? charts : undefined,
+    references: references.length > 0 ? references : undefined,
   }
 }

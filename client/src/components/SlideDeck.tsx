@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
+  BookMarked,
   ChevronLeft,
   ChevronRight,
   Expand,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import type { Slide } from '../lib/types'
 import { InlineText } from './InlineText'
+import { SlideReferences } from './SlideReferences'
 import { SlideView } from './SlideView'
 import { ThemeSwitcher } from './ThemeSwitcher'
 
@@ -175,7 +177,10 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
       return (
         slide.title.toLowerCase().includes(normalizedQuery) ||
         slide.subtitle?.toLowerCase().includes(normalizedQuery) ||
-        slide.items.some((item) => item.toLowerCase().includes(normalizedQuery))
+        slide.items.some((item) => item.toLowerCase().includes(normalizedQuery)) ||
+        (slide.references?.some((reference) =>
+          reference.toLowerCase().includes(normalizedQuery),
+        ) ?? false)
       )
     })
 
@@ -209,6 +214,9 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
     >
       <span className="font-mono text-xs text-faint">
         {String(i + 1).padStart(2, '0')}
+        {slide.references && slide.references.length > 0 && (
+          <BookMarked className="ml-1.5 inline h-3 w-3 align-[-0.1em]" />
+        )}
       </span>
       <span className="mt-2 block text-base leading-snug font-medium text-heading">
         <InlineText text={slide.title} />
@@ -320,6 +328,12 @@ export function SlideDeck({ slides, presentationTitle, onExit }: SlideDeckProps)
           <ChevronRight className="h-5 w-5" />
         </button>
       </footer>
+
+      {current.references && current.references.length > 0 && (
+        <div className="absolute right-5 bottom-24 z-10">
+          <SlideReferences references={current.references} />
+        </div>
+      )}
 
       {index === 0 && !showHelp && !showOverview && (
         <div className="animate-slide-in absolute bottom-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/10 px-4 py-2 text-sm text-ink">

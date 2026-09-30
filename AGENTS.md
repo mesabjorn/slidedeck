@@ -47,10 +47,11 @@ Key files:
 - `src/App.tsx` — top-level state: picker vs. deck, loading/error handling
 - `src/hooks/usePresentations.ts` — loads deck list from `/api/presentations`
 - `src/hooks/useSlides.ts` — loads parsed slides from `/api/presentations/:id/slides`
-- `src/lib/types.ts` — shared types: `Slide`, `SlideImage`, `Chart`, `PresentationMeta`
+- `src/lib/types.ts` — shared types: `Slide`, `SlideImage`, `Chart`, `PresentationMeta` (a slide also carries `references?: string[]`)
 - `src/components/SlideDeck.tsx` — navigation, keyboard shortcuts, fullscreen, overview grid, help modal
 - `src/components/SlideView.tsx` — renders one slide (including charts)
 - `src/components/InlineText.tsx` — renders inline markdown (bold, italic, code, links, tooltips, inline images)
+- `src/components/SlideReferences.tsx` — hover icon + reference panel for the current slide
 - `src/components/ChartView.tsx` — hand-rolled SVG bar/line/pie charts with hover tooltips (pie has a legend)
 - `src/components/Tooltip.tsx` — tooltip popover + inline tooltip component
 - `src/components/PresentationPicker.tsx` — deck chooser using server-provided slide counts
@@ -65,8 +66,27 @@ Slides are separated by `---`. Parser rules in `server/markdown.js`:
 - `![alt](path)` — block image (first one wins)
 - `![chart:bar](data/sales.csv)` / `chart:line` / `chart:pie` — block chart; data from a CSV under `data/` or inline: `![chart:pie](inline:Q1,Q2;10,15)`
 - `- item` / `* item` / `+ item` / `1. item` — bullet items (bullets and numbered collapse into `items`)
+- `> text` — a reference line; collected in order into `references` (other `>`-prefixed lines are ignored)
 - Any other non-`#`/`>` line — appended to subtitle
 - Inline markdown inside titles/subtitles/items: `**bold**`, `*italic*`, `` `code` ``, `[text](url)`, `[text](tooltip:hint)`, `![alt](src)`
+
+## References
+
+Any line starting with `>` is a reference for that slide. The block is never rendered on the slide itself: the client shows a `BookMarked` icon in the bottom-right corner of the slide, with the reference count, and a panel of that slide's references on hover or keyboard focus.
+
+```markdown
+# Where projects break
+
+- **Leakage** — the model reads information that will not exist at prediction time
+- **Silent drift** — performance decays quietly after deployment
+
+> Kelly CJ, Karthikesalingam A, Suleyman M, et al. Key challenges for delivering clinical impact with AI. BMC Medicine 2019. https://doi.org/10.1186/s12916-019-1426-2
+> [WHO guidance](https://www.who.int/publications/i/item/9789240029200) on ethics and governance of AI for health
+```
+
+- Plain `https://` links are auto-linked; `[text](url)` and `**bold**` work as elsewhere, so a reference can carry a short label plus a bare DOI or URL
+- In a layout file (`~~~` columns) each column may carry its own `>` lines; the slide's references are all of them merged in column order
+- Reference text goes through the same media-path resolution as other text, and is searchable from the overview (slides with references also show a small icon next to their number)
 
 ## Chart data
 

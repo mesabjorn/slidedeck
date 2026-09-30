@@ -239,10 +239,18 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
               charts: block.charts
                 ? await resolveCharts(block.charts, id)
                 : undefined,
+              references: block.references
+                ? block.references.map((text) =>
+                    resolveMediaInText(text, resolve),
+                  )
+                : undefined,
               flex: entry.layout.columns[
                 blockIndex % entry.layout.columns.length
               ],
             })),
+          );
+          const references = columns.flatMap(
+            (column) => column.references ?? [],
           );
           parsed.push({
             id: `${entry.file}#layout`,
@@ -250,6 +258,7 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
             items: [],
             section: section.name,
             columns,
+            references: references.length > 0 ? references : undefined,
           });
           continue;
         }
@@ -268,6 +277,11 @@ app.get("/api/presentations/:id/slides", async (req, res) => {
               : undefined,
             charts: slide.charts
               ? await resolveCharts(slide.charts, id)
+              : undefined,
+            references: slide.references
+              ? slide.references.map((text) =>
+                  resolveMediaInText(text, resolve),
+                )
               : undefined,
             section: section.name,
           })),
