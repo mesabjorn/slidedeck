@@ -123,7 +123,11 @@ function RevealStepView({ step }: { step: SlideRevealStep }) {
         />
       )}
       {step.charts && step.charts.length > 0 && (
-        <ChartGrid charts={step.charts} className="max-w-3xl" />
+        <ChartGrid
+          charts={step.charts}
+          className="max-w-3xl"
+          items={step.items || []}
+        />
       )}
       {step.text && (
         <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-muted sm:text-lg">
