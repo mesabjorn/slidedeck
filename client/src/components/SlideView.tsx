@@ -53,8 +53,10 @@ function SlideImageView({
 
 function ChartGrid({
   charts,
+  items,
   className = "max-w-4xl",
 }: {
+  items: string[];
   charts: Chart[];
   className?: string;
 }) {
@@ -65,13 +67,14 @@ function ChartGrid({
       {charts.map((chart, i) => (
         <div key={i} className={charts.length === 1 ? "lg:col-span-2" : ""}>
           <ChartView chart={chart} />
+          <GraphLegend items={items} />
         </div>
       ))}
     </div>
   );
 }
 
-function ItemList({ items }: { items: string[] }) {
+function GraphLegend({ items }: { items: string[] }) {
   return (
     <ul className="mx-auto mt-12 max-w-3xl space-y-5 text-left">
       {items.map((item, i) => (
@@ -83,6 +86,24 @@ function ItemList({ items }: { items: string[] }) {
             className={`h-2.5 w-2.5 shrink-0 rounded-full`}
             style={{ backgroundColor: COLORS[i % COLORS.length] }}
           />
+          <span>
+            <InlineText text={item} />
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ItemList({ items }: { items: string[] }) {
+  return (
+    <ul className="mx-auto mt-12 max-w-3xl space-y-5 text-left">
+      {items.map((item, i) => (
+        <li
+          key={i}
+          className="flex items-center gap-4 text-xl leading-snug text-ink sm:text-2xl"
+        >
+          <span className={`h-2.5 w-2.5 shrink-0 rounded-full bg-accent`} />
           <span>
             <InlineText text={item} />
           </span>
@@ -119,6 +140,7 @@ function RevealStepView({ step }: { step: SlideRevealStep }) {
 // layers sit in the same grid cell, so the box grows to the largest image and
 // each one keeps its own aspect ratio.
 function RevealOverlay({ images }: { images: SlideImage[] }) {
+  const top = images.length - 1;
   return (
     <div className="mx-auto mt-10 grid w-full">
       {images.map((image, i) => (
@@ -131,6 +153,7 @@ function RevealOverlay({ images }: { images: SlideImage[] }) {
             gridArea: "1 / 1",
             zIndex: i,
             transform: `translate(${i * 8}px, ${i * 8}px)`,
+            filter: `brightness(${Math.max(20, 100 - (top - i) * 40)}%)`,
           }}
           className="max-h-[55vh] max-w-full place-self-center rounded-2xl border border-border/10 object-contain shadow-2xl"
         />
@@ -213,8 +236,10 @@ function SlideContent({
           </h1>
         ))}
       {image && <SlideImageView image={image} />}
-      {charts && charts.length > 0 && <ChartGrid charts={charts} />}
-      {items.length > 0 && <ItemList items={items} />}
+      {charts && charts.length > 0 && (
+        <ChartGrid charts={charts} items={items} />
+      )}
+      {items.length > 0 && !charts && <ItemList items={items} />}
       {reveal && reveal.length > 0 && (
         <RevealSteps reveal={reveal} revealStep={revealStep} />
       )}

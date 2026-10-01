@@ -328,7 +328,7 @@ export function SlideDeck({
   const overviewCard = ({ slide, i }: { slide: Slide; i: number }) => (
     <button
       type="button"
-      key={slide.id}
+      key={`${slide.id}-${i}`}
       onClick={() => {
         goTo(i);
         resetOverlays();
