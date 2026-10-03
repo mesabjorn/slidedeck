@@ -19,7 +19,8 @@ interface PresentationPickerProps {
   error: string | null;
   onSelect: (id: string) => void;
   onCreate: (title: string) => Promise<PresentationMeta>;
-  onImport: (file: File) => Promise<void>;
+  onImportFile: (file: File) => Promise<void>;
+  onImportUrl: (url: string) => Promise<void>;
 }
 
 export function PresentationPicker({
@@ -28,7 +29,8 @@ export function PresentationPicker({
   error,
   onSelect,
   onCreate,
-  onImport,
+  onImportFile,
+  onImportUrl,
 }: PresentationPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -36,6 +38,8 @@ export function PresentationPicker({
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [importingUrl, setImportingUrl] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
 
   async function handleCreate(event: SubmitEvent): Promise<void> {
@@ -62,17 +66,33 @@ export function PresentationPicker({
   ): Promise<void> {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file || importing) return;
+    if (!file || importing || importingUrl) return;
     setImporting(true);
     setImportError(null);
     try {
-      await onImport(file);
+      await onImportFile(file);
     } catch (err) {
       setImportError(
         err instanceof Error ? err.message : "Could not import presentation",
       );
     } finally {
       setImporting(false);
+    }
+  }
+  async function handleImportUrl(): Promise<void> {
+    const url = importUrl.trim();
+    if (!url || importing || importingUrl) return;
+    setImportingUrl(true);
+    setImportError(null);
+    try {
+      await onImportUrl(url);
+      setImportUrl("");
+    } catch (err) {
+      setImportError(
+        err instanceof Error ? err.message : "Could not import presentation from URL",
+      );
+    } finally {
+      setImportingUrl(false);
     }
   }
 
@@ -149,29 +169,54 @@ export function PresentationPicker({
   );
 
   const importControl = (
-    <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,application/json"
-        onChange={(event) => void handleImport(event)}
-        className="hidden"
-        aria-label="Import presentation JSON"
-      />
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={importing}
-        className="flex items-center gap-2 rounded-full bg-surface/10 px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface/20 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {importing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Upload className="h-4 w-4" />
-        )}
-        {importing ? "Importing…" : "Import JSON"}
-      </button>
-    </>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={(event) => void handleImport(event)}
+          className="hidden"
+          aria-label="Import presentation JSON file"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importing || importingUrl}
+          className="flex items-center gap-2 rounded-full bg-surface/10 px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {importing ? "Importing…" : "Import JSON file"}
+        </button>
+        <div className="flex flex-1 items-center gap-2">
+          <input
+            type="url"
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                void handleImportUrl();
+              }
+            }}
+            placeholder="https://raw.githubusercontent.com/.../slides.json"
+            className="w-full rounded-full border border-border/10 bg-surface/10 px-3 py-2 text-sm text-ink outline-none transition placeholder:text-faint focus:border-accent/60"
+            disabled={importing || importingUrl}
+          />
+          <button
+            type="button"
+            onClick={() => void handleImportUrl()}
+            disabled={importing || importingUrl || importUrl.trim().length === 0}
+            className="flex items-center gap-2 rounded-full bg-surface/10 px-4 py-2.5 text-sm font-medium text-ink transition hover:bg-surface/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {importingUrl ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+            {importingUrl ? "Importing…" : "Import from URL"}
+          </button>
+        </div>
+      </div>
+      {importError && (
+        <p className="text-sm text-amber-400">{importError}</p>
+      )}
+    </div>
   );
 
   if (loading) {

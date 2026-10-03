@@ -85,6 +85,28 @@ function isSlide(value: unknown): value is Slide {
   return true;
 }
 
+function importPresentationFromData(
+  data: unknown,
+  sourceName: string,
+): ImportedPresentation {
+  if (!isRecord(data) || !Array.isArray(data.slides) || data.slides.length === 0) {
+    throw new Error("JSON must contain a non-empty slides array");
+  }
+  if (!data.slides.every(isSlide)) {
+    throw new Error("JSON contains an invalid slide");
+  }
+  const slides = data.slides as Slide[];
+  const id =
+    (typeof data.id === "string" && data.id.trim()) ||
+    sourceName.replace(/\.json$/i, "").trim() ||
+    "imported-presentation";
+  const title =
+    (typeof data.title === "string" && data.title.trim()) ||
+    slides[0].title.trim() ||
+    "Imported presentation";
+  return { id, title, slides };
+}
+
 async function importPresentation(file: File): Promise<ImportedPresentation> {
   let data: unknown;
   try {
@@ -92,29 +114,29 @@ async function importPresentation(file: File): Promise<ImportedPresentation> {
   } catch {
     throw new Error("Could not read the selected JSON file");
   }
+  return importPresentationFromData(data, file.name);
+}
 
-  if (
-    !isRecord(data) ||
-    !Array.isArray(data.slides) ||
-    data.slides.length === 0
-  ) {
-    throw new Error("JSON must contain a non-empty slides array");
+async function importPresentationFromUrl(
+  url: string,
+): Promise<ImportedPresentation> {
+  let res: Response;
+  try {
+    res = await fetch(url, { mode: "cors" });
+  } catch {
+    throw new Error("Could not fetch URL (CORS or network)");
   }
-  if (!data.slides.every(isSlide)) {
-    throw new Error("JSON contains an invalid slide");
+  if (!res.ok) {
+    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
   }
-
-  const slides = data.slides as Slide[];
-  const id =
-    (typeof data.id === "string" && data.id.trim()) ||
-    file.name.replace(/\.json$/i, "").trim() ||
-    "imported-presentation";
-  const title =
-    (typeof data.title === "string" && data.title.trim()) ||
-    slides[0].title.trim() ||
-    "Imported presentation";
-
-  return { id, title, slides };
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("URL did not return valid JSON");
+  }
+  const sourceName = url.split("/").pop() || "imported.json";
+  return importPresentationFromData(data, sourceName);
 }
 
 function downloadImportedPresentation(
@@ -168,8 +190,13 @@ const App = () => {
           setPresentationId(id);
         }}
         onCreate={createPresentation}
-        onImport={async (file) => {
+        onImportFile={async (file) => {
           const imported = await importPresentation(file);
+          setImportedPresentation(imported);
+          setPresentationId(null);
+        }}
+        onImportUrl={async (url) => {
+          const imported = await importPresentationFromUrl(url);
           setImportedPresentation(imported);
           setPresentationId(null);
         }}
