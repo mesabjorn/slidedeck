@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Slide } from "../lib/types";
 import { InlineText } from "./InlineText";
+import { SciFiBackdrop } from "./SciFiBackdrop";
 import { SlideView } from "./SlideView";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 
@@ -35,6 +36,7 @@ const SHORTCUTS = [
   { keys: "F", action: "Toggle fullscreen" },
   { keys: "O", action: "Toggle overview" },
   { keys: "R", action: "Toggle references" },
+  { keys: "B", action: "Toggle fullscreen backdrop" },
   { keys: "H", action: "Show this help" },
   { keys: "Esc", action: "Close overlays, rewind steps" },
 ];
@@ -73,6 +75,7 @@ export function SlideDeck({
   const [showOverview, setShowOverview] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showReferences, setShowReferences] = useState(false);
+  const [showSciFiBackdrop, setShowSciFiBackdrop] = useState(true);
   const [query, setQuery] = useState("");
 
   const current = slides[index] ?? slides[0];
@@ -264,6 +267,10 @@ export function SlideDeck({
         case "R":
           if (hasReferences) setShowReferences((current) => !current);
           break;
+        case "b":
+        case "B":
+          setShowSciFiBackdrop((current) => !current);
+          break;
         case "h":
         case "H":
         case "?":
@@ -354,6 +361,8 @@ export function SlideDeck({
   );
   return (
     <div className="relative h-full overflow-hidden bg-bg text-ink">
+      {isFullscreen && showSciFiBackdrop && <SciFiBackdrop />}
+
       <div
         key={current.id}
         onClick={advanceOnClick}

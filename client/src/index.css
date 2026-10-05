@@ -110,3 +110,191 @@
     color: var(--color-ink);
   }
 }
+
+.scifi-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scifi-haze {
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(circle at 14% 18%, color-mix(in oklab, var(--color-accent) 12%, transparent), transparent 44%),
+    radial-gradient(circle at 84% 24%, color-mix(in oklab, var(--color-accent-strong) 10%, transparent), transparent 42%),
+    radial-gradient(circle at 46% 78%, color-mix(in oklab, var(--color-muted) 14%, transparent), transparent 50%);
+  opacity: 0.35;
+  filter: blur(48px);
+  animation: scifi-haze-drift 32s ease-in-out infinite alternate;
+}
+
+.scifi-grid {
+  position: absolute;
+  inset: -20%;
+  background-image:
+    linear-gradient(
+      105deg,
+      color-mix(in oklab, var(--color-muted) 5%, transparent) 0,
+      transparent 35%,
+      color-mix(in oklab, var(--color-accent) 6%, transparent) 50%,
+      transparent 64%,
+      color-mix(in oklab, var(--color-muted) 5%, transparent) 100%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--color-border) 8%, transparent) 0,
+      color-mix(in oklab, var(--color-border) 8%, transparent) 1px,
+      transparent 1px,
+      transparent 56px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--color-border) 8%, transparent) 0,
+      color-mix(in oklab, var(--color-border) 8%, transparent) 1px,
+      transparent 1px,
+      transparent 56px
+    );
+  mix-blend-mode: screen;
+  opacity: 0.12;
+  transform: perspective(720px) rotateX(58deg) translateY(12%);
+  transform-origin: center bottom;
+  animation: scifi-grid-pan 36s linear infinite;
+}
+
+.scifi-shape {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  opacity: 0;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 55%, transparent);
+  background: color-mix(in oklab, var(--color-accent) 8%, transparent);
+  box-shadow:
+    0 0 18px color-mix(in oklab, var(--color-accent-strong) 24%, transparent),
+    inset 0 0 10px color-mix(in oklab, var(--color-muted) 16%, transparent);
+  transform: translate(-50%, -50%) rotate(calc(var(--shape-angle) + var(--shape-base-rotate, 0deg)));
+  animation: scifi-shape-fade var(--duration) ease-in-out forwards;
+}
+
+.scifi-trails {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.scifi-trail {
+  position: absolute;
+  left: var(--trail-x);
+  top: var(--trail-y);
+  width: var(--trail-length);
+  height: var(--trail-thickness);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--color-accent-strong) 0%, transparent) 0%,
+    color-mix(in oklab, var(--color-accent-strong) 88%, transparent) 42%,
+    color-mix(in oklab, var(--color-heading) 85%, transparent) 76%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 16px color-mix(in oklab, var(--color-accent) 48%, transparent),
+    0 0 26px color-mix(in oklab, var(--color-accent-strong) 44%, transparent);
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--trail-angle)) scaleX(0.25);
+  animation: scifi-trail-streak var(--trail-duration) ease-out forwards;
+  animation-delay: var(--trail-delay);
+}
+
+.scifi-shape--hex {
+  clip-path: polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0 50%);
+}
+
+.scifi-shape--diamond {
+  border-color: color-mix(in oklab, var(--color-accent-strong) 58%, transparent);
+  background: color-mix(in oklab, var(--color-accent-strong) 9%, transparent);
+}
+
+.scifi-shape--triangle {
+  clip-path: polygon(50% 3%, 98% 95%, 2% 95%);
+  border-color: color-mix(in oklab, var(--color-muted) 62%, transparent);
+  background: color-mix(in oklab, var(--color-muted) 10%, transparent);
+}
+
+.scifi-shape--ring {
+  border-radius: 999px;
+  background: transparent;
+  border-width: 1.5px;
+}
+
+@keyframes scifi-shape-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92)
+      rotate(calc(var(--shape-angle) + var(--shape-base-rotate, 0deg)));
+  }
+  14% {
+    opacity: var(--shape-alpha);
+  }
+  44% {
+    opacity: calc(var(--shape-alpha) * 0.72);
+  }  
+  100% {
+    opacity: calc(var(--shape-alpha) * 0.1);
+    transform: translate(calc(-50% + var(--drift-x)), calc(-50% + var(--drift-y)))
+      scale(1.05)
+      rotate(
+        calc(
+          var(--shape-angle) + var(--shape-base-rotate, 0deg) + var(--spin)
+        )
+      );
+  }
+}
+
+@keyframes scifi-grid-pan {
+  from {
+    transform: perspective(720px) rotateX(58deg) translateY(12%) translateX(-2%);
+  }
+  to {
+    transform: perspective(720px) rotateX(58deg) translateY(12%) translateX(2%);
+  }
+}
+
+@keyframes scifi-haze-drift {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, 1%, 0) scale(1.05);
+  }
+}
+
+@keyframes scifi-trail-streak {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--trail-angle)) scaleX(0.2);
+  }
+  8% {
+    opacity: 0.66;
+  }
+  46% {
+    opacity: 0.28;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--trail-dx)), calc(-50% + var(--trail-dy)))
+      rotate(var(--trail-angle)) scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scifi-haze,
+  .scifi-grid,
+  .scifi-shape,
+  .scifi-trail {
+    animation: none;
+  }
+}

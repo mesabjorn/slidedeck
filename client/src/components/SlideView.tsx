@@ -284,7 +284,7 @@ export function SlideView({
 }) {
   if (slide.columns && slide.columns.length > 0) {
     return (
-      <div className="flex w-full max-w-6xl flex-col items-center gap-10">
+      <div className="flex w-full max-w-6xl flex-col items-center gap-10 z-1">
         <h1 className="mt-2 text-5xl font-bold leading-tight tracking-tight text-heading sm:text-7xl">
           <InlineText text={slide.title} />
         </h1>
